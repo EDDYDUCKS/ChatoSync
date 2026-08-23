@@ -1,0 +1,121 @@
+================================================================================
+          DOCUMENTO DE EXPLICACIÓN TÉCNICA PARA EL EQUIPO DE TRABAJO
+  PROYECTO: ChatoSync - Plataforma Autónoma de Sincronización de Archivos
+                     y Automatización de Horarios (ULSA Edge-Hub)
+================================================================================
+
+Asignatura:   Taller de Conectividad (IV Año)
+Carrera:      Ingeniería en Cibernética Electrónica
+Docente:      Ing. Freddy Alexander Mejía Quintana
+Institución:  Universidad Tecnológica La Salle (ULSA), León, Nicaragua
+GitHub:       https://github.com/EDDYDUCKS/ChatoSync.git
+
+--------------------------------------------------------------------------------
+1. EL PROBLEMA REAL EN EL CAMPUS ULSA
+--------------------------------------------------------------------------------
+En las aulas y laboratorios de la ULSA nos enfrentamos a dos problemas diarios:
+
+1. Congestión de Internet y Aislamiento de Red (AP Isolation):
+   Subir archivos pesados (código, instaladores, firmwares, PDFs, videos) a Google
+   Drive o GitHub usando el Wi-Fi de la universidad congestiona la salida a Internet
+   y tarda minutos u horas. Además, las políticas de seguridad impiden que los
+   dispositivos se comuniquen entre sí directamente por Wi-Fi.
+
+2. Ineficiencia en la Gestión de Horarios Escolares:
+   Al inicio de cada cuatrimestre, la Oficina de Registro Académico emite la hoja
+   oficial en PDF ("Imprimir Inscripción.pdf"). Copiar a mano cada asignatura,
+   código, aula (ej. B107), horarios y docentes al teléfono celular es tedioso,
+   repetitivo y propenso a errores.
+
+--------------------------------------------------------------------------------
+2. LA SOLUCIÓN DE INGENIERÍA: ChatoSync
+--------------------------------------------------------------------------------
+ChatoSync convierte la laptop de desarrollo del estudiante en un SERVIDOR DE BORDE
+(Edge Computing) portátil corriendo sobre una Máquina Virtual con Debian 13.
+
+- Crea una burbuja de red inalámbrica privada mediante el Hotspot de la laptop.
+- Permite transferir archivos a velocidad física pura de la tarjeta Wi-Fi (30 MB/s+)
+  mediante carpetas compartidas de Samba y la nube privada Nextcloud.
+- Integra un motor de Inteligencia Artificial / OCR local (Tesseract) que recibe la
+  foto de la hoja de inscripción por correo electrónico, lee las clases de forma
+  dinámica y las agenda automáticamente en tu Google Calendar personal con
+  notificaciones de 20 minutos antes, generando además un PDF impreso vectorial
+  de tu horario semanal.
+
+--------------------------------------------------------------------------------
+3. ARQUITECTURA DE RED Y DIRECCIONAMIENTO IP
+--------------------------------------------------------------------------------
+Topología sin necesidad de router externo:
+
+- Punto de Acceso (AP): Hotspot Móvil de Windows (Laptop)
+- Subred Local: 192.168.137.0 / 24
+- Windows Host (Laptop): 192.168.137.1
+- Servidor Debian 13 (VM): 192.168.137.10 (IP Estática en Adaptador Puente)
+- Celulares / Clientes: DHCP Dinámico (192.168.137.x)
+
+--------------------------------------------------------------------------------
+4. TECNOLOGÍAS Y SERVICIOS UTILIZADOS (CAPA POR CAPA)
+--------------------------------------------------------------------------------
+
+[ Redes y Resolución de Nombres ]
+• BIND9 (DNS Server):
+  Servidor DNS local en Debian. Resuelve el dominio "ulsa.local". Permite acceder
+  a los servicios mediante nombres legibles (ej. http://hub.ulsa.local o
+  \\hub.ulsa.local\hub-compartido) desde cualquier celular o laptop conectada.
+
+[ Correo Electrónico Local (MTA / MDA) ]
+• Postfix (MTA) & Dovecot (MDA):
+  Servidor de correo completo para el dominio ulsa.local. Maneja la casilla
+  receptor "importar@ulsa.local" con almacenamiento en formato Maildir.
+
+[ Compartición de Archivos LAN ]
+• Samba Server:
+  Carpeta compartida de red UNIX/Windows (\\hub.ulsa.local\hub-compartido) accesible
+  directamente desde el Explorador de Archivos de Windows.
+• Stack LAMP + Nextcloud:
+  Servidor web Apache2 + MariaDB + PHP 8.2 ejecutando Nextcloud para la sincronización
+  de archivos y documentos desde la app móvil.
+
+[ Visión por Computadora & Automatización (El Cerebro) ]
+• Python 3 + Tesseract OCR (Spa) + PIL (Pillow):
+  Librería de visión por computadora que preprocesa la imagen (escala de grises,
+  enfoque, contraste) y extrae el texto impreso.
+• Regex Dinámico (Expresiones Regulares):
+  Algoritmo dinámico que identifica cualquier cantidad de materias, salones
+  alfanuméricos (ej. G106, D104, B105, U107), horarios y docentes.
+
+[ Sincronización Móvil & Notificaciones ]
+• Google Calendar API (OAuth 2.0):
+  Conexión directa a la API oficial de Google Calendar. Inyecta cada clase como
+  un evento recurrente semanal con recordatorios emergentes (popup) silenciosos
+  20 minutos antes de cada sesión en el celular.
+
+[ Impresión Virtual & Demonios ]
+• CUPS + CUPS-PDF + LibreOffice Headless:
+  Spooler de impresión de UNIX que convierte la agenda compilada a un archivo
+  PDF vectorial listo en la carpeta compartida Samba.
+• systemd (chatosync.service):
+  Servicio en segundo plano que mantiene el sistema en monitoreo constante (24/7).
+
+--------------------------------------------------------------------------------
+5. FLUJO DE FUNCIONAMIENTO EN LA DEMOSTRACIÓN (LA MAGIA)
+--------------------------------------------------------------------------------
+1. Encendemos el Hotspot de la laptop ("ULSA-Hub") e iniciamos la VM Debian 13.
+2. Los celulares se conectan a la red Wi-Fi de la laptop.
+3. Se prueba la velocidad de Samba/Nextcloud pasando un archivo de 500 MB en segundos.
+4. Tomas una captura de tu hoja de inscripción de la ULSA.
+5. Envías la imagen por correo a "importar@ulsa.local".
+6. En menos de 45 segundos:
+   - El script detecta el correo y ejecuta el OCR.
+   - El Google Calendar de tu celular se actualiza en vivo con todas tus clases y
+     notificaciones de 20 minutos.
+   - Aparece el archivo "Mi_Horario_Semanal_ULSA.pdf" en la carpeta compartida Samba.
+
+--------------------------------------------------------------------------------
+6. REPOSITORIO OFICIAL DEL PROYECTO
+--------------------------------------------------------------------------------
+Todo el código fuente, guías de instalación y archivos de configuración están
+versionados en GitHub:
+
+  👉 https://github.com/EDDYDUCKS/ChatoSync.git
+================================================================================
