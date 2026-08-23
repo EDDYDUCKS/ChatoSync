@@ -1,0 +1,10 @@
+# Configuración de Postfix para ULSA Local-Hub
+myhostname = mail.ulsa.local
+mydomain = ulsa.local
+myorigin = $mydomain
+inet_interfaces = all
+inet_protocols = ipv4
+mydestination = $myhostname, localhost.$mydomain, localhost, $mydomain
+home_mailbox = Maildir/
+mynetworks = 127.0.0.0/8 [::1]/128 192.168.137.0/24
+smtpd_banner = $myhostname ESMTP ULSA-Hub Mail Server

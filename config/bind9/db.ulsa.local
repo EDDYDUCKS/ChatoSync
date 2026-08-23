@@ -1,0 +1,14 @@
+$TTL    604800
+@       IN      SOA     servidor.ulsa.local. root.ulsa.local. (
+                     2026082301         ; Serial
+                         604800         ; Refresh
+                          86400         ; Retry
+                        2419200         ; Expire
+                         604800 )       ; Negative Cache IPv4
+;
+@       IN      NS      servidor.ulsa.local.
+@       IN      MX      10 mail.ulsa.local.
+
+servidor IN      A       192.168.137.10
+mail     IN      A       192.168.137.10
+hub      IN      CNAME   servidor.ulsa.local.

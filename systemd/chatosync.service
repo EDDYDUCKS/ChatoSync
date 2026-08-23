@@ -1,0 +1,16 @@
+[Unit]
+Description=ChatoSync OCR and Google Calendar Service
+After=network.target postfix.service dovecot.service cups.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/srv/samba/hub
+ExecStart=/usr/bin/python3 /srv/samba/hub/procesar_horario.py
+Restart=always
+RestartSec=5
+StandardOutput=file:/var/log/chatosync.log
+StandardError=file:/var/log/chatosync.log
+
+[Install]
+WantedBy=multi-user.target

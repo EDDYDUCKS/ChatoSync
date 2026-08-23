@@ -1,0 +1,16 @@
+# ChatoSync Git Ignore File
+__pycache__/
+*.pyc
+*.pyo
+*.log
+
+# OAuth Credentials & Tokens (Do not commit sensitive tokens)
+credentials.json
+token.json
+
+# Temporary files
+/tmp/
+*.tmp
+*.bak
+.DS_Store
+Thumbs.db
