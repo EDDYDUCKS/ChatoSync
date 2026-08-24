@@ -6,10 +6,10 @@ echo "[*] Instalando dependencias del sistema y Tesseract OCR..."
 apt update && apt install -y tesseract-ocr tesseract-ocr-spa python3-venv python3-full
 
 echo "[*] Creando entorno virtual aislado de Python en /opt/chatosync-venv..."
+rm -rf /opt/chatosync-venv
 python3 -m venv /opt/chatosync-venv
 
 echo "[*] Instalando librerías Python en el entorno virtual..."
-/opt/chatosync-venv/bin/pip install --upgrade pip
 /opt/chatosync-venv/bin/pip install pytesseract google-api-python-client google-auth-httplib2 google-auth-oauthlib pillow
 
 echo "[*] Copiando script principal procesar_horario.py a /srv/samba/hub/..."
