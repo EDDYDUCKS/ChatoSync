@@ -15,8 +15,8 @@ named-checkconf
 named-checkzone ulsa.local /etc/bind/db.ulsa.local
 named-checkzone 137.168.192.in-addr.arpa /etc/bind/db.192.168.137
 
-echo "[*] Reiniciando y habilitando servicio BIND9..."
-systemctl restart bind9
-systemctl enable bind9
+echo "[*] Reiniciando y habilitando servicio BIND9 (named)..."
+systemctl restart named
+systemctl enable named
 
 echo "[+] BIND9 instalado y configurado correctamente para ulsa.local (192.168.137.10)."
