@@ -3,7 +3,7 @@
 set -e
 
 echo "[*] Instalando CUPS, CUPS-PDF y LibreOffice Headless..."
-apt update && apt install -y cups cups-pdf libreoffice-writer libreoffice-impress
+apt update && apt install -y cups printer-driver-cups-pdf libreoffice-writer
 
 echo "[*] Aplicando configuración de /etc/cups/cupsd.conf..."
 cp ../config/cups/cupsd.conf /etc/cups/cupsd.conf
