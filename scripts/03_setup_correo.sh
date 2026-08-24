@@ -2,8 +2,11 @@
 # Script de automatización para Postfix + Dovecot - ChatoSync
 set -e
 
-echo "[*] Reinstalando paquetes base de Dovecot para asegurar archivos originales..."
-DEBIAN_FRONTEND=noninteractive apt install -y --reinstall dovecot-core dovecot-imapd dovecot-pop3d postfix
+echo "[*] Instalando Postfix y Dovecot IMAP/POP3..."
+DEBIAN_FRONTEND=noninteractive apt install -y postfix dovecot-imapd dovecot-pop3d
+
+echo "[*] Restaurando configuración original de Dovecot y aplicando overrides..."
+DEBIAN_FRONTEND=noninteractive apt install --reinstall -o Dpkg::Options::="--force-confmiss" -y dovecot-core dovecot-imapd dovecot-pop3d
 
 echo "[*] Aplicando configuración de Postfix..."
 cp ../config/postfix/main.cf /etc/postfix/main.cf
