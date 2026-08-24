@@ -13,12 +13,12 @@ GRANT ALL PRIVILEGES ON nextcloud.* TO 'nextclouduser'@'localhost' IDENTIFIED BY
 FLUSH PRIVILEGES;
 EOF
 
-echo "[*] Descargando e instalando Nextcloud Latest..."
-cd /tmp
+echo "[*] Descargando e instalando Nextcloud Latest (directo en /var/www/html)..."
+cd /var/www/html
+rm -rf latest.zip nextcloud
 wget -q https://download.nextcloud.com/server/releases/latest.zip
 unzip -q latest.zip
-rm -rf /var/www/html/nextcloud
-mv nextcloud /var/www/html/
+rm -f latest.zip
 
 echo "[*] Asignando permisos de Apache (www-data)..."
 chown -R www-data:www-data /var/www/html/nextcloud
