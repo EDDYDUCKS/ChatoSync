@@ -9,20 +9,15 @@ DEBIAN_FRONTEND=noninteractive apt install -y postfix dovecot-imapd dovecot-pop3
 echo "[*] Aplicando configuración de Postfix..."
 cp ../config/postfix/main.cf /etc/postfix/main.cf
 
-echo "[*] Eliminando archivos de configuración rotos de runs anteriores..."
+echo "[*] Limpiando configuraciones previas de Dovecot..."
 rm -f /etc/dovecot/conf.d/10-auth.conf
 rm -f /etc/dovecot/conf.d/10-mail.conf
 rm -f /etc/dovecot/conf.d/99-chatosync.conf
 
-echo "[*] Restaurando archivos originales de Dovecot..."
-DEBIAN_FRONTEND=noninteractive apt install --reinstall \
-    -o Dpkg::Options::="--force-confmiss" \
-    -y dovecot-core dovecot-imapd dovecot-pop3d 2>/dev/null || true
-
-echo "[*] Aplicando configuración personalizada de ChatoSync (Dovecot 2.4 syntax)..."
-# En Dovecot 2.4 'disable_plaintext_auth' fue reemplazado por 'auth_allow_cleartext'
-printf "auth_allow_cleartext = yes\nmail_location = maildir:~/Maildir\n" \
-    > /etc/dovecot/conf.d/99-chatosync.conf
+echo "[*] Aplicando configuración Dovecot 2.4 compatible..."
+# Dovecot 2.4 cambio: mail_location -> mail_driver + mail_path
+# Dovecot 2.4 cambio: disable_plaintext_auth -> auth_allow_cleartext
+cp ../config/dovecot/99-chatosync.conf /etc/dovecot/conf.d/99-chatosync.conf
 
 echo "[*] Creando usuario receptor 'importar' si no existe..."
 if ! id "importar" &>/dev/null; then
