@@ -3,12 +3,17 @@
 set -e
 
 echo "[*] Instalando dependencias del sistema y Tesseract OCR..."
-apt update && apt install -y tesseract-ocr tesseract-ocr-spa python3-pip python3-pil python3-requests python3-venv
+apt update && apt install -y tesseract-ocr tesseract-ocr-spa python3-venv python3-full
 
-echo "[*] Instalando librerías Python vía pip (pytesseract, google-api-python-client)..."
-pip3 install --break-system-packages --ignore-installed pytesseract google-api-python-client google-auth-httplib2 google-auth-oauthlib pillow
+echo "[*] Creando entorno virtual aislado de Python en /opt/chatosync-venv..."
+python3 -m venv /opt/chatosync-venv
+
+echo "[*] Instalando librerías Python en el entorno virtual..."
+/opt/chatosync-venv/bin/pip install --upgrade pip
+/opt/chatosync-venv/bin/pip install pytesseract google-api-python-client google-auth-httplib2 google-auth-oauthlib pillow
 
 echo "[*] Copiando script principal procesar_horario.py a /srv/samba/hub/..."
+mkdir -p /srv/samba/hub
 cp ../src/procesar_horario.py /srv/samba/hub/procesar_horario.py
 chmod +x /srv/samba/hub/procesar_horario.py
 
