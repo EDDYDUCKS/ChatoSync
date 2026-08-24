@@ -3,20 +3,21 @@
 # Compatible con Dovecot 2.4.x (Debian 13 Trixie)
 set -e
 
-echo "[*] Instalando Postfix y Dovecot IMAP/POP3..."
-DEBIAN_FRONTEND=noninteractive apt install -y postfix dovecot-imapd dovecot-pop3d
+echo "[*] Instalando Postfix..."
+DEBIAN_FRONTEND=noninteractive apt install -y postfix
 
 echo "[*] Aplicando configuración de Postfix..."
 cp ../config/postfix/main.cf /etc/postfix/main.cf
 
-echo "[*] Limpiando configuraciones previas de Dovecot..."
-rm -f /etc/dovecot/conf.d/10-auth.conf
-rm -f /etc/dovecot/conf.d/10-mail.conf
-rm -f /etc/dovecot/conf.d/99-chatosync.conf
+echo "[*] Realizando purge completo de Dovecot para instalación limpia..."
+DEBIAN_FRONTEND=noninteractive apt purge -y dovecot-core dovecot-imapd dovecot-pop3d 2>/dev/null || true
 
-echo "[*] Aplicando configuración Dovecot 2.4 compatible..."
-# Dovecot 2.4 cambio: mail_location -> mail_driver + mail_path
-# Dovecot 2.4 cambio: disable_plaintext_auth -> auth_allow_cleartext
+echo "[*] Instalando Dovecot fresco..."
+DEBIAN_FRONTEND=noninteractive apt install -y dovecot-imapd dovecot-pop3d
+
+echo "[*] Aplicando configuración ChatoSync para Dovecot 2.4..."
+# Dovecot 2.4: mail_location global fue eliminado; usar namespace inbox
+# Dovecot 2.4: disable_plaintext_auth fue renombrado a auth_allow_cleartext
 cp ../config/dovecot/99-chatosync.conf /etc/dovecot/conf.d/99-chatosync.conf
 
 echo "[*] Creando usuario receptor 'importar' si no existe..."
