@@ -103,20 +103,13 @@ if ($action === 'upload') {
             $scriptPath = "/var/www/html/procesar_horario.py";
         }
         
-        $cmd = "/opt/chatosync-venv/bin/python " . escapeshellarg($scriptPath) . " --file " . escapeshellarg($tempPath) . " 2>&1";
-        $out = shell_exec($cmd);
+        $cmd = "/opt/chatosync-venv/bin/python " . escapeshellarg($scriptPath) . " --file " . escapeshellarg($tempPath) . " 2>/dev/null";
+        $out = trim(shell_exec($cmd) ?: '');
         
         if (file_exists($tempPath)) { @unlink($tempPath); }
         
-        $clases = [];
-        if ($out) {
-            $jsonStart = strpos($out, '[');
-            $jsonEnd = strrpos($out, ']');
-            if ($jsonStart !== false && $jsonEnd !== false && $jsonEnd > $jsonStart) {
-                $rawJson = substr($out, $jsonStart, $jsonEnd - $jsonStart + 1);
-                $clases = json_decode($rawJson, true) ?: [];
-            }
-        }
+        $clases = json_decode($out, true) ?: [];
+
         
         echo json_encode([
             'status' => 'ok',
