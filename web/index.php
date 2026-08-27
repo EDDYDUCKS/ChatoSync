@@ -479,9 +479,9 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
             <div class="lg:col-span-2 rounded-xl flex flex-col themed-card">
                 <div class="px-5 py-4 border-b flex items-center justify-between flex-wrap gap-2" style="border-color:var(--border);">
                     <div class="flex items-center gap-2">
-                        <h3 class="text-sm font-bold text-white">Clases Extraídas</h3>
+                        <h3 class="text-sm font-bold text-white">Bloques de Clase Extraídos</h3>
                         <span id="detectedCountBadge" class="text-xs px-2 py-0.5 rounded font-semibold"
-                              style="background:var(--redbg);color:var(--red2);">0 clases</span>
+                              style="background:var(--redbg);color:var(--red2);">0 bloques</span>
                     </div>
                     <div class="flex items-center gap-2">
                         <button onclick="clearMySchedule()" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
@@ -880,7 +880,7 @@ function renderTableSchedule(clases) {
     });
 
     const badge = document.getElementById('detectedCountBadge');
-    if(badge) badge.textContent = clases.length + ' clases';
+    if(badge) badge.textContent = clases.length + (clases.length === 1 ? ' bloque' : ' bloques');
 }
 
 function updateClassField(index, field, value) {
