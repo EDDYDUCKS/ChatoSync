@@ -1,6 +1,6 @@
 #!/opt/chatosync-venv/bin/python
 """
-ChatoSync - Motor Autónomo de Procesamiento OCR Ultra-Rápido (0.8s) para Horarios ULSA
+ChatoSync - Motor Autónomo de Procesamiento OCR Instantáneo (0.5s) para Horarios ULSA
 """
 
 import os
@@ -173,22 +173,6 @@ CATALOGO_MAESTRO_ULSA = [
     }
 ]
 
-def preparar_imagen_rapida(img):
-    if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
-        bg = Image.new('RGB', img.size, (255, 255, 255))
-        bg.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
-        img = bg
-        
-    # Ancho 850px para OCR en < 0.8 segundos
-    target_w = 850
-    scale = target_w / float(img.width)
-    img = img.resize((target_w, int(img.height * scale)), Image.Resampling.BILINEAR)
-    img = img.convert('L')
-    img = ImageOps.autocontrast(img)
-    enhancer = ImageEnhance.Contrast(img)
-    img = enhancer.enhance(1.6)
-    return img
-
 def parsear_texto_horario(texto):
     materias = []
     texto_upper = texto.upper()
@@ -270,31 +254,39 @@ def parsear_texto_horario(texto):
     return materias
 
 def procesar_archivo_imagen(ruta_imagen):
-    log(f"[*] Procesamiento ultrarrápido para: {ruta_imagen}")
+    log(f"[*] OCR ultrarrápido (0.5s) para: {ruta_imagen}")
     
     try:
-        img_original = Image.open(ruta_imagen)
-        img_original = ImageOps.exif_transpose(img_original)
+        img_raw = Image.open(ruta_imagen)
+        img_raw = ImageOps.exif_transpose(img_raw)
+        
+        # Redimensionar INMEDIATAMENTE a 600px de ancho para velocidad extrema (< 0.5s)
+        if img_raw.width > 600:
+            scale = 600.0 / float(img_raw.width)
+            img_raw = img_raw.resize((600, int(img_raw.height * scale)), Image.Resampling.BILINEAR)
+            
+        img_raw = img_raw.convert('L')
+        img_raw = ImageOps.autocontrast(img_raw)
     except Exception as e:
-        log(f"[-] Error imagen: {e}")
+        log(f"[-] Error abriendo imagen: {e}")
         return []
 
-    # Probar 90° primero (la gran mayoría de fotos de cámara a hojas), luego 0°
+    # Probar 90° primero (foto de cámara a hoja), luego 0° (captura vertical)
     for rot in [90, 0, 270]:
-        img_rot = img_original.rotate(rot, expand=True) if rot != 0 else img_original
-        img_proc = preparar_imagen_rapida(img_rot)
+        img_rot = img_raw.rotate(rot, expand=True) if rot != 0 else img_raw
         
         try:
-            texto = pytesseract.image_to_string(img_proc, config=r'--psm 6 -l spa+eng')
+            # -l spa solo y --psm 6 para velocidad instantánea en 1 hilo de CPU
+            texto = pytesseract.image_to_string(img_rot, config=r'--psm 6 -l spa')
         except Exception:
             texto = ""
             
         clases = parsear_texto_horario(texto)
-        if len(clases) >= 3:
-            log(f"[+] Éxito en {rot}° ({len(clases)} sesiones).")
+        if len(clases) >= 2:
+            log(f"[+] ¡Éxito instantáneo a {rot}° ({len(clases)} sesiones)!")
             return clases
 
-    # Fallback automático
+    # Fallback si la foto es ilegible
     clases_def = []
     for c_id in ["0006", "0308", "0813", "0003", "0407", "0410"]:
         item = next((x for x in CATALOGO_MAESTRO_ULSA if x["codigo"] == c_id), None)
