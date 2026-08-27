@@ -1,346 +1,254 @@
 <?php
+// ── Manejar subida de archivos ──────────────────────────────────────────────
 $uploadDir = "/srv/samba/hub/";
-$allowedExt = ['jpg','jpeg','png','gif','pdf','zip','rar','7z','mp4','mp3','avi','mkv','docx','doc','xlsx','xls','pptx','ppt','txt','apk','iso','ova','exe','py','sh'];
-$message = '';
-$messageType = '';
+$message = ''; $msgType = '';
 
-// SUBIR ARCHIVO
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo'])) {
     $file = $_FILES['archivo'];
     if ($file['error'] === UPLOAD_ERR_OK) {
-        $name = basename($file['name']);
-        $name = preg_replace('/[^a-zA-Z0-9\._\-]/', '_', $name);
+        $name = preg_replace('/[^a-zA-Z0-9\._\-]/', '_', basename($file['name']));
         $dest = $uploadDir . $name;
-        // Si ya existe, agregar timestamp
-        if (file_exists($dest)) {
-            $info = pathinfo($name);
-            $name = $info['filename'] . '_' . time() . '.' . ($info['extension'] ?? 'bin');
-            $dest = $uploadDir . $name;
-        }
-        if (move_uploaded_file($file['tmp_name'], $dest)) {
-            chmod($dest, 0777);
-            $message = "✅ \"$name\" subido exitosamente al servidor.";
-            $messageType = 'success';
-        } else {
-            $message = "❌ Error al guardar el archivo. Verifique permisos del servidor.";
-            $messageType = 'error';
-        }
-    } else {
-        $message = "❌ Error en la subida: código " . $file['error'];
-        $messageType = 'error';
-    }
+        if (file_exists($dest)) { $info=pathinfo($name); $name=$info['filename'].'_'.time().'.'.(($info['extension'])??'bin'); $dest=$uploadDir.$name; }
+        if (move_uploaded_file($file['tmp_name'], $dest)) { chmod($dest,0777); $message="✓ \"$name\" subido exitosamente."; $msgType='ok'; }
+        else { $message="✗ Error al guardar. Verifique permisos del servidor."; $msgType='err'; }
+    } else { $message="✗ Error en la subida: código ".$file['error']; $msgType='err'; }
 }
-
-// ELIMINAR ARCHIVO
 if (isset($_GET['del'])) {
-    $del = basename($_GET['del']);
-    $path = $uploadDir . $del;
-    if (file_exists($path) && !is_dir($path)) {
-        unlink($path);
-        header("Location: transfer.php?msg=deleted");
-        exit;
-    }
+    $del = basename($_GET['del']); $path = $uploadDir.$del;
+    if (file_exists($path) && !is_dir($path)) { unlink($path); header("Location: transfer.php"); exit; }
 }
 
-// LISTAR ARCHIVOS
 $files = [];
 if (is_dir($uploadDir)) {
     foreach (scandir($uploadDir) as $f) {
-        if ($f === '.' || $f === '..' || is_dir($uploadDir.$f)) continue;
-        $ext = strtolower(pathinfo($f, PATHINFO_EXTENSION));
-        $size = filesize($uploadDir.$f);
-        $date = filemtime($uploadDir.$f);
-        $files[] = ['name' => $f, 'ext' => $ext, 'size' => $size, 'date' => $date];
+        if ($f==='.'||$f==='..'||is_dir($uploadDir.$f)) continue;
+        $files[] = ['name'=>$f,'size'=>filesize($uploadDir.$f),'date'=>filemtime($uploadDir.$f)];
     }
-    usort($files, fn($a,$b) => $b['date'] - $a['date']);
+    usort($files, fn($a,$b)=>$b['date']-$a['date']);
 }
 
-function formatSize($bytes) {
-    if ($bytes >= 1073741824) return round($bytes/1073741824, 2) . ' GB';
-    if ($bytes >= 1048576) return round($bytes/1048576, 1) . ' MB';
-    if ($bytes >= 1024) return round($bytes/1024, 1) . ' KB';
-    return $bytes . ' B';
-}
-
-function fileIcon($ext) {
-    $icons = [
-        'pdf' => '📄', 'doc' => '📝', 'docx' => '📝', 'xls' => '📊', 'xlsx' => '📊',
-        'ppt' => '📑', 'pptx' => '📑', 'zip' => '🗜️', 'rar' => '🗜️', '7z' => '🗜️',
-        'mp4' => '🎬', 'avi' => '🎬', 'mkv' => '🎬', 'mp3' => '🎵',
-        'jpg' => '🖼️', 'jpeg' => '🖼️', 'png' => '🖼️', 'gif' => '🖼️',
-        'apk' => '📱', 'iso' => '💿', 'ova' => '💻', 'exe' => '⚙️',
-        'py' => '🐍', 'sh' => '🔧', 'txt' => '📋'
-    ];
-    return $icons[$ext] ?? '📁';
-}
-
+function fmtSz($b){if($b>=1073741824)return round($b/1073741824,2).' GB';if($b>=1048576)return round($b/1048576,1).' MB';if($b>=1024)return round($b/1024,1).' KB';return $b.' B';}
+function fmtIco($e){$m=['pdf'=>'📄','doc'=>'📝','docx'=>'📝','zip'=>'🗜️','rar'=>'🗜️','7z'=>'🗜️','mp4'=>'🎬','avi'=>'🎬','mkv'=>'🎬','mp3'=>'🎵','jpg'=>'🖼️','jpeg'=>'🖼️','png'=>'🖼️','apk'=>'📱','iso'=>'💿','ova'=>'💻','exe'=>'⚙️','py'=>'🐍','sh'=>'🔧','txt'=>'📋'];return $m[$e]??'📁';}
 $serverIP = trim(shell_exec("hostname -I | awk '{print $1}'") ?? '192.168.137.102');
-$pageURL = "http://{$serverIP}/transfer.php";
+$totalSize = array_sum(array_column($files,'size'));
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChatoSync Transfer | Compartir Archivos</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .drop-active { border-color: #10b981 !important; background: rgba(16,185,129,0.08) !important; }
-        #progressBar { transition: width 0.2s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
-        .fade-in { animation: fadeIn 0.3s ease; }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ChatoSync · Transfer</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+:root{--red:#dc2626;--red2:#ef4444;--redbg:rgba(220,38,38,.12);--card:#111111;--border:#2a2a2a;}
+*{box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#e5e5e5;min-height:100vh;}
+::-webkit-scrollbar{width:5px;} ::-webkit-scrollbar-track{background:#111;} ::-webkit-scrollbar-thumb{background:#333;border-radius:9px;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.fade-up{animation:fadeUp .35s ease both;}
+.row:hover{background:rgba(220,38,38,.05);}
+#dropZ.over{border-color:var(--red)!important;background:var(--redbg)!important;}
+</style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen">
+<body>
 
 <!-- Header -->
-<header class="bg-slate-800/90 border-b border-slate-700/60 sticky top-0 z-50 backdrop-blur-md">
-    <div class="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-            <a href="/" class="text-slate-400 hover:text-white transition-colors">
-                <i class="fa-solid fa-arrow-left text-sm"></i>
-            </a>
-            <div class="h-8 w-8 rounded-lg bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center">
-                <i class="fa-solid fa-share-nodes text-sm text-white"></i>
+<header class="h-14 flex items-center justify-between px-6 border-b sticky top-0 z-30"
+        style="background:#0a0a0a;border-color:var(--border);">
+    <div class="flex items-center gap-4">
+        <a href="/" class="flex items-center gap-2 text-sm font-medium transition-colors"
+           style="color:#555;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#555'">
+            <i class="fa-solid fa-arrow-left text-xs"></i> Dashboard
+        </a>
+        <div class="h-4 w-px" style="background:var(--border);"></div>
+        <div class="flex items-center gap-2">
+            <div class="h-6 w-6 rounded flex items-center justify-center text-xs font-black text-white" style="background:var(--red);">
+                <i class="fa-solid fa-share-nodes" style="font-size:10px;"></i>
             </div>
-            <div>
-                <h1 class="text-base font-bold text-white">ChatoSync <span class="text-emerald-400">Transfer</span></h1>
-                <p class="text-[11px] text-slate-400">Compartir archivos sin Internet • <?= count($files) ?> archivos</p>
-            </div>
+            <span class="text-sm font-bold text-white">ChatoSync <span style="color:var(--red2);">Transfer</span></span>
         </div>
-        <div class="flex items-center gap-2 text-xs text-slate-400 bg-slate-700/50 px-3 py-1.5 rounded-lg border border-slate-600/50">
-            <span class="h-2 w-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span class="font-mono text-emerald-400 font-semibold"><?= $serverIP ?></span>
-        </div>
+    </div>
+    <div class="flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-lg"
+         style="background:var(--card);border:1px solid var(--border);">
+        <span class="h-1.5 w-1.5 rounded-full" style="background:#22c55e;box-shadow:0 0 6px #22c55e;"></span>
+        <span style="color:#22c55e;"><?=$serverIP?></span>
+        <span style="color:#555;">· <?=count($files)?> archivos · <?=fmtSz($totalSize)?></span>
     </div>
 </header>
 
-<!-- Main Content -->
-<main class="max-w-5xl mx-auto px-4 py-6 space-y-6">
+<main class="max-w-5xl mx-auto px-4 py-6 space-y-5">
 
-    <?php if ($message): ?>
-    <div class="fade-in p-4 rounded-xl border <?= $messageType === 'success' ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-rose-500/10 border-rose-500/30 text-rose-300' ?> text-sm font-medium">
-        <?= $message ?>
+    <?php if($message):?>
+    <div class="fade-up p-4 rounded-xl text-sm font-medium"
+         style="background:<?=$msgType==='ok'?'rgba(34,197,94,.1)':'var(--redbg)'?>;
+                border:1px solid <?=$msgType==='ok'?'rgba(34,197,94,.3)':'rgba(220,38,38,.3)'?>;
+                color:<?=$msgType==='ok'?'#22c55e':'var(--red2)'?>;">
+        <?=$message?>
     </div>
-    <?php endif; ?>
+    <?php endif;?>
 
-    <!-- Grid Superior: Subir + QR -->
+    <!-- Upload + QR grid -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
 
-        <!-- Zona de Subida (2/3) -->
-        <div class="md:col-span-2">
-            <div class="rounded-2xl bg-slate-800/60 border border-slate-700/60 p-5 h-full">
-                <h2 class="text-base font-bold text-white flex items-center gap-2 mb-4">
-                    <i class="fa-solid fa-cloud-arrow-up text-emerald-400"></i>
-                    Subir Archivo al Servidor
+        <!-- Upload (2/3) -->
+        <div class="md:col-span-2 rounded-xl" style="background:var(--card);border:1px solid var(--border);">
+            <div class="px-5 py-4 border-b" style="border-color:var(--border);">
+                <h2 class="text-sm font-bold text-white">
+                    <i class="fa-solid fa-cloud-arrow-up mr-2" style="color:var(--red);"></i>Subir al Servidor
                 </h2>
-
-                <!-- Drop Zone -->
+                <p class="text-xs mt-0.5" style="color:#555;">Cualquier archivo — todos en la red ULSA-Hub pueden descargarlo</p>
+            </div>
+            <div class="p-5 space-y-3">
                 <form id="uploadForm" method="POST" enctype="multipart/form-data">
-                    <div id="dropZone" class="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center transition-all cursor-pointer hover:border-emerald-500 group relative">
-                        <input type="file" name="archivo" id="fileInput" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="handleFileSelect(this)">
-                        <div id="dropContent" class="pointer-events-none space-y-3">
-                            <div class="h-14 w-14 mx-auto rounded-2xl bg-emerald-500/10 group-hover:bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-2xl transition-colors">
-                                <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <div id="dropZ" class="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all relative"
+                         style="border-color:#2a2a2a;"
+                         onclick="document.getElementById('fi').click()">
+                        <input type="file" name="archivo" id="fi" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                               onchange="handleSel(this)">
+                        <div id="dc" class="space-y-3 pointer-events-none">
+                            <div class="h-14 w-14 mx-auto rounded-2xl flex items-center justify-center text-2xl"
+                                 style="background:var(--redbg);">
+                                <i class="fa-solid fa-cloud-arrow-up" style="color:var(--red2);"></i>
                             </div>
                             <div>
-                                <p class="text-sm font-semibold text-slate-200">Toca aquí o arrastra tu archivo</p>
-                                <p class="text-xs text-slate-500 mt-1">ZIP, PDF, APK, ISO, Video, Imagen, Instaladores...</p>
+                                <p class="text-sm font-semibold text-white">Toca aquí o arrastra tu archivo</p>
+                                <p class="text-xs mt-1" style="color:#555;">ZIP, APK, ISO, Video, PDF, Imagen, Instaladores…</p>
                             </div>
                         </div>
-
-                        <!-- Preview de archivo seleccionado -->
-                        <div id="filePreview" class="hidden pointer-events-none space-y-3">
-                            <div class="h-14 w-14 mx-auto rounded-2xl bg-blue-500/20 text-blue-400 flex items-center justify-center text-2xl">
-                                <i class="fa-solid fa-file-circle-check"></i>
-                            </div>
-                            <div>
-                                <p id="fileName" class="text-sm font-semibold text-white truncate max-w-xs mx-auto"></p>
-                                <p id="fileSize" class="text-xs text-slate-400 mt-0.5"></p>
-                            </div>
+                        <div id="fp" class="hidden space-y-2 pointer-events-none">
+                            <i class="fa-solid fa-file-circle-check text-3xl" style="color:var(--red2);"></i>
+                            <p id="fn" class="text-sm font-semibold text-white truncate max-w-xs mx-auto"></p>
+                            <p id="fs" class="text-xs" style="color:#888;"></p>
                         </div>
                     </div>
 
-                    <!-- Barra de Progreso -->
-                    <div id="progressContainer" class="hidden mt-3 space-y-1">
-                        <div class="flex items-center justify-between text-xs text-slate-400">
-                            <span>Subiendo al servidor...</span>
-                            <span id="progressText">0%</span>
+                    <div id="pg" class="hidden space-y-1">
+                        <div class="flex justify-between text-xs" style="color:#555;">
+                            <span>Subiendo…</span><span id="pt">0%</span>
                         </div>
-                        <div class="h-2 bg-slate-700 rounded-full overflow-hidden">
-                            <div id="progressBar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full" style="width:0%"></div>
+                        <div class="h-1.5 rounded-full" style="background:#1a1a1a;">
+                            <div id="pb" class="h-full rounded-full" style="width:0%;background:var(--red);transition:width .2s;"></div>
                         </div>
                     </div>
 
-                    <!-- Botón Enviar -->
-                    <button type="button" id="uploadBtn" onclick="submitUpload()" class="hidden mt-3 w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 transition-colors text-white font-semibold text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20">
-                        <i class="fa-solid fa-rocket"></i>
-                        Enviar al Servidor Ahora
+                    <button type="button" id="ubtn" onclick="doUpload()"
+                            class="hidden w-full py-3 rounded-xl text-sm font-bold text-white mt-3"
+                            style="background:var(--red);">
+                        <i class="fa-solid fa-rocket mr-2"></i>Enviar al Servidor
                     </button>
                 </form>
 
-                <!-- Info SMB -->
-                <div class="mt-4 p-3 rounded-xl bg-slate-900/60 border border-slate-700/40 text-xs">
-                    <div class="text-slate-400 mb-1 flex items-center gap-1.5">
-                        <i class="fa-solid fa-folder-open text-amber-400"></i>
-                        También puedes arrastrar archivos directamente desde Windows:
-                    </div>
-                    <code class="text-emerald-400 font-mono select-all">\\<?= $serverIP ?>\hub</code>
+                <div class="p-3 rounded-lg text-xs" style="background:#0d0d0d;border:1px solid var(--border);">
+                    <span style="color:#555;"><i class="fa-solid fa-folder-open mr-1" style="color:#f59e0b;"></i>Acceso directo Windows:</span>
+                    <code class="ml-2 font-mono" style="color:var(--red2);">\\<?=$serverIP?>\hub</code>
                 </div>
             </div>
         </div>
 
-        <!-- Código QR (1/3) -->
-        <div class="md:col-span-1">
-            <div class="rounded-2xl bg-slate-800/60 border border-slate-700/60 p-5 h-full flex flex-col items-center justify-center text-center space-y-4">
-                <h2 class="text-sm font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-qrcode text-emerald-400"></i>
-                    Escanea para Compartir
-                </h2>
-                <p class="text-xs text-slate-400">Abre con la cámara de tu celular desde la misma red Wi-Fi</p>
-                <div class="bg-white p-3 rounded-xl shadow-xl shadow-black/30">
-                    <div id="qrcode"></div>
-                </div>
-                <div class="text-[10px] text-slate-500 font-mono break-all px-2"><?= $pageURL ?></div>
-                <div class="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
-                    <i class="fa-solid fa-wifi"></i>
-                    Conectar a: <strong>ULSA-Hub</strong>
-                </div>
+        <!-- QR (1/3) -->
+        <div class="rounded-xl flex flex-col items-center justify-center text-center p-5 space-y-4"
+             style="background:var(--card);border:1px solid var(--border);">
+            <div class="text-xs font-semibold uppercase tracking-wider" style="color:#555;">
+                <i class="fa-solid fa-qrcode mr-1" style="color:var(--red);"></i>Escanea para acceder
             </div>
+            <div class="bg-white p-2.5 rounded-xl shadow-2xl">
+                <div id="qrcode"></div>
+            </div>
+            <p class="text-xs" style="color:#555;">
+                Conecta tu celular a<br>
+                <strong class="text-white">ULSA-Hub</strong> Wi-Fi y escanea
+            </p>
+            <code class="text-[10px] font-mono break-all" style="color:var(--red2);">http://<?=$serverIP?>/transfer.php</code>
         </div>
     </div>
 
-    <!-- Listado de Archivos -->
-    <div class="rounded-2xl bg-slate-800/60 border border-slate-700/60 p-5">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="text-base font-bold text-white flex items-center gap-2">
-                <i class="fa-solid fa-folder-open text-amber-400"></i>
-                Archivos Disponibles para Descargar
-                <span class="px-2 py-0.5 rounded-full bg-slate-700 text-slate-300 text-xs font-semibold"><?= count($files) ?></span>
+    <!-- File list -->
+    <div class="rounded-xl" style="background:var(--card);border:1px solid var(--border);">
+        <div class="px-5 py-4 border-b flex items-center justify-between" style="border-color:var(--border);">
+            <h2 class="text-sm font-bold text-white">
+                Archivos Disponibles
+                <span class="ml-2 text-xs px-2 py-0.5 rounded font-semibold"
+                      style="background:var(--redbg);color:var(--red2);"><?=count($files)?></span>
             </h2>
-            <button onclick="location.reload()" class="text-xs text-slate-400 hover:text-emerald-400 transition-colors flex items-center gap-1">
+            <button onclick="location.reload()" class="text-xs" style="color:#555;">
                 <i class="fa-solid fa-rotate"></i> Actualizar
             </button>
         </div>
 
-        <?php if (empty($files)): ?>
-        <div class="text-center py-12 text-slate-500">
-            <i class="fa-solid fa-inbox text-4xl mb-3 block opacity-30"></i>
-            <p class="text-sm">No hay archivos todavía.</p>
-            <p class="text-xs mt-1">Sube el primero desde tu laptop o celular.</p>
+        <?php if(empty($files)):?>
+        <div class="p-12 text-center text-xs" style="color:#444;">
+            <i class="fa-solid fa-inbox text-3xl mb-2 block opacity-20"></i>
+            Hub vacío — sube el primer archivo arriba
         </div>
-        <?php else: ?>
-        <div class="space-y-2" id="fileList">
-            <?php foreach ($files as $f): ?>
-            <div class="group flex items-center gap-3 p-3 rounded-xl bg-slate-900/50 hover:bg-slate-700/50 border border-slate-700/40 hover:border-slate-600/60 transition-all">
-                <div class="text-2xl flex-shrink-0"><?= fileIcon($f['ext']) ?></div>
-                <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-white truncate"><?= htmlspecialchars($f['name']) ?></p>
-                    <p class="text-xs text-slate-500 mt-0.5">
-                        <?= formatSize($f['size']) ?> • <?= date('d/m/Y H:i', $f['date']) ?>
-                    </p>
-                </div>
-                <div class="flex items-center gap-2 flex-shrink-0">
-                    <a href="download.php?file=<?= urlencode($f['name']) ?>" 
-                       class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-md shadow-emerald-600/20">
-                        <i class="fa-solid fa-download"></i>
-                        <span class="hidden sm:inline">Descargar</span>
-                    </a>
-                    <a href="?del=<?= urlencode($f['name']) ?>" 
-                       onclick="return confirm('¿Eliminar <?= htmlspecialchars($f['name']) ?>?')"
-                       class="p-1.5 rounded-lg bg-slate-700 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 text-xs transition-colors">
-                        <i class="fa-solid fa-trash"></i>
-                    </a>
-                </div>
+        <?php else: foreach($files as $f):
+            $ext=strtolower(pathinfo($f['name'],PATHINFO_EXTENSION));?>
+        <div class="row flex items-center gap-3 px-5 py-3 border-b transition-colors"
+             style="border-color:var(--border);">
+            <span class="text-xl flex-shrink-0"><?=fmtIco($ext)?></span>
+            <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium text-white truncate"><?=htmlspecialchars($f['name'])?></p>
+                <p class="text-[11px] mt-0.5" style="color:#555;">
+                    <?=fmtSz($f['size'])?> · <?=date('d/m/Y H:i',$f['date'])?>
+                </p>
             </div>
-            <?php endforeach; ?>
+            <div class="flex items-center gap-2 flex-shrink-0">
+                <a href="/download.php?file=<?=urlencode($f['name'])?>"
+                   class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white flex items-center gap-1.5"
+                   style="background:var(--red);">
+                    <i class="fa-solid fa-download"></i>
+                    <span class="hidden sm:inline">Descargar</span>
+                </a>
+                <a href="?del=<?=urlencode($f['name'])?>"
+                   onclick="return confirm('¿Eliminar <?=htmlspecialchars($f['name'])?>?')"
+                   class="p-1.5 rounded-lg text-xs transition-colors"
+                   style="background:#1a1a1a;border:1px solid var(--border);color:#555;">
+                    <i class="fa-solid fa-trash"></i>
+                </a>
+            </div>
         </div>
-        <?php endif; ?>
+        <?php endforeach; endif;?>
     </div>
 
 </main>
 
-<!-- Scripts -->
 <script>
-// Generar QR Code
-new QRCode(document.getElementById("qrcode"), {
-    text: "<?= $pageURL ?>",
-    width: 160,
-    height: 160,
-    colorDark: "#000000",
-    colorLight: "#ffffff",
-    correctLevel: QRCode.CorrectLevel.M
+new QRCode(document.getElementById('qrcode'),{text:'http://<?=$serverIP?>/transfer.php',width:160,height:160,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
+
+const dropZ=document.getElementById('dropZ'),fi=document.getElementById('fi');
+dropZ.addEventListener('dragover',e=>{e.preventDefault();dropZ.classList.add('over');});
+dropZ.addEventListener('dragleave',()=>dropZ.classList.remove('over'));
+dropZ.addEventListener('drop',e=>{
+    e.preventDefault();dropZ.classList.remove('over');
+    if(e.dataTransfer.files[0]){const dt=new DataTransfer();dt.items.add(e.dataTransfer.files[0]);fi.files=dt.files;handleSel(fi);}
 });
 
-// Drag & Drop
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
-
-dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('drop-active'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drop-active'));
-dropZone.addEventListener('drop', (e) => {
-    e.preventDefault();
-    dropZone.classList.remove('drop-active');
-    if (e.dataTransfer.files.length > 0) {
-        const dt = new DataTransfer();
-        dt.items.add(e.dataTransfer.files[0]);
-        fileInput.files = dt.files;
-        showPreview(e.dataTransfer.files[0]);
-    }
-});
-
-function handleFileSelect(input) {
-    if (input.files.length > 0) showPreview(input.files[0]);
+function handleSel(inp){
+    if(!inp.files.length) return;
+    const f=inp.files[0];
+    document.getElementById('dc').classList.add('hidden');
+    document.getElementById('fp').classList.remove('hidden');
+    document.getElementById('fn').textContent=f.name;
+    const s=f.size;
+    document.getElementById('fs').textContent=s>=1048576?(s/1048576).toFixed(1)+' MB':s>=1024?(s/1024).toFixed(0)+' KB':s+' B';
+    document.getElementById('ubtn').classList.remove('hidden');
 }
 
-function showPreview(file) {
-    document.getElementById('dropContent').classList.add('hidden');
-    document.getElementById('filePreview').classList.remove('hidden');
-    document.getElementById('fileName').textContent = file.name;
-    document.getElementById('fileSize').textContent = formatFileSize(file.size);
-    document.getElementById('uploadBtn').classList.remove('hidden');
-    document.getElementById('uploadBtn').classList.add('flex');
-}
-
-function formatFileSize(bytes) {
-    if (bytes >= 1073741824) return (bytes/1073741824).toFixed(2) + ' GB';
-    if (bytes >= 1048576) return (bytes/1048576).toFixed(1) + ' MB';
-    if (bytes >= 1024) return (bytes/1024).toFixed(1) + ' KB';
-    return bytes + ' B';
-}
-
-function submitUpload() {
-    if (!fileInput.files.length) return;
-    const btn = document.getElementById('uploadBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
-    
-    const formData = new FormData();
-    formData.append('archivo', fileInput.files[0]);
-    
-    const xhr = new XMLHttpRequest();
-    document.getElementById('progressContainer').classList.remove('hidden');
-    
-    xhr.upload.onprogress = function(e) {
-        if (e.lengthComputable) {
-            const pct = Math.round((e.loaded / e.total) * 100);
-            document.getElementById('progressBar').style.width = pct + '%';
-            document.getElementById('progressText').textContent = pct + '%';
-        }
+function doUpload(){
+    if(!fi.files.length) return;
+    const btn=document.getElementById('ubtn');
+    btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin mr-2"></i>Enviando…';
+    const fd=new FormData();fd.append('archivo',fi.files[0]);
+    const xhr=new XMLHttpRequest();
+    document.getElementById('pg').classList.remove('hidden');
+    xhr.upload.onprogress=e=>{
+        if(e.lengthComputable){const p=Math.round(e.loaded/e.total*100);document.getElementById('pb').style.width=p+'%';document.getElementById('pt').textContent=p+'%';}
     };
-    
-    xhr.onload = function() { window.location.reload(); };
-    xhr.onerror = function() { 
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-rocket"></i> Reintentar';
-    };
-    
-    xhr.open('POST', 'transfer.php', true);
-    xhr.send(formData);
+    xhr.onload=()=>window.location.reload();
+    xhr.open('POST','transfer.php',true);
+    xhr.send(fd);
 }
 </script>
 </body>
