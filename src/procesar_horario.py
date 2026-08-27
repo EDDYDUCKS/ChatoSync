@@ -48,8 +48,19 @@ UNTIL_DATE = "20261218T235959Z"
 def log(msg):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     formatted = f"[{timestamp}] {msg}"
-    print(formatted)
-    sys.stdout.flush()
+    # Si se ejecuta como CLI para la web, escribir logs a stderr para no ensuciar stdout (JSON)
+    if "--file" in sys.argv or "--json" in sys.argv:
+        sys.stderr.write(formatted + "\n")
+        sys.stderr.flush()
+    else:
+        print(formatted)
+        sys.stdout.flush()
+        
+    try:
+        with open(LOG_FILE, "a", encoding="utf-8") as f_log:
+            f_log.write(formatted + "\n")
+    except Exception:
+        pass
 
 def preprocesar_imagen(image_path):
     try:
@@ -58,7 +69,7 @@ def preprocesar_imagen(image_path):
         img = img.filter(ImageFilter.SHARPEN)
         enhancer = ImageEnhance.Contrast(img)
         img = enhancer.enhance(2.5)
-        temp_clean_path = "/tmp/cleaned_horario.png"
+        temp_clean_path = f"/tmp/cleaned_horario_{int(time.time()*1000)}.png"
         img.save(temp_clean_path)
         return temp_clean_path
     except Exception as e:
@@ -113,10 +124,6 @@ def parsear_texto_horario(texto):
     return materias
 
 def generar_ics_calendario(clases, ruta_salida="/srv/samba/hub/horario_ulsa.ics"):
-    """
-    Genera un archivo estándar .ics compatible con Google Calendar, Apple Calendar y Outlook
-    con notificaciones silenciosas de 20 minutos antes de clase.
-    """
     dias_offset = {"Lu": 0, "Ma": 1, "Mi": 2, "Ju": 3, "Vi": 4, "Sa": 5}
     hoy = datetime.now()
     lunes_base = hoy - timedelta(days=hoy.weekday())
@@ -166,10 +173,14 @@ def generar_ics_calendario(clases, ruta_salida="/srv/samba/hub/horario_ulsa.ics"
 
     lineas.append("END:VCALENDAR")
     
-    with open(ruta_salida, "w", encoding="utf-8") as f:
-        f.write("\r\n".join(lineas) + "\r\n")
+    try:
+        with open(ruta_salida, "w", encoding="utf-8") as f:
+            f.write("\r\n".join(lineas) + "\r\n")
+        os.chmod(ruta_salida, 0o777)
+        log(f"[+] Archivo de calendario iCalendar generado exitosamente en: {ruta_salida}")
+    except Exception as e:
+        log(f"[-] Error al guardar archivo ICS: {e}")
         
-    log(f"[+] Archivo de calendario iCalendar generado exitosamente en: {ruta_salida}")
     return ruta_salida
 
 def generar_pdf_agenda(clases, ruta_salida="/srv/samba/hub/Mi_Horario_Semanal_ULSA.pdf"):
@@ -240,13 +251,17 @@ def generar_pdf_agenda(clases, ruta_salida="/srv/samba/hub/Mi_Horario_Semanal_UL
     """
 
     temp_html = "/tmp/horario_agenda.html"
-    with open(temp_html, "w", encoding="utf-8") as f:
-        f.write(html_content)
+    try:
+        with open(temp_html, "w", encoding="utf-8") as f:
+            f.write(html_content)
 
-    os.system(f"libreoffice --headless --convert-to pdf {temp_html} --outdir /tmp/ >/dev/null 2>&1")
-    if os.path.exists("/tmp/horario_agenda.pdf"):
-        shutil.copy("/tmp/horario_agenda.pdf", ruta_salida)
-        log(f"[+] PDF de Agenda Semanal generado exitosamente en: {ruta_salida}")
+        os.system(f"libreoffice --headless --convert-to pdf {temp_html} --outdir /tmp/ >/dev/null 2>&1")
+        if os.path.exists("/tmp/horario_agenda.pdf"):
+            shutil.copy("/tmp/horario_agenda.pdf", ruta_salida)
+            os.chmod(ruta_salida, 0o777)
+            log(f"[+] PDF de Agenda Semanal generado exitosamente en: {ruta_salida}")
+    except Exception as e:
+        log(f"[-] Error al generar PDF de agenda: {e}")
 
 def procesar_archivo_imagen(ruta_archivo):
     log(f"[*] Iniciando procesamiento OCR para: {ruta_archivo}")
@@ -263,13 +278,18 @@ def procesar_archivo_imagen(ruta_archivo):
         generar_pdf_agenda(clases)
         
         # Guardar resultado en formato JSON para la interfaz web
-        with open("/srv/samba/hub/ultimo_horario.json", "w", encoding="utf-8") as f:
-            json.dump({
-                "fecha_procesamiento": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "archivo_origen": os.path.basename(ruta_archivo),
-                "total_clases": len(clases),
-                "clases": clases
-            }, f, ensure_ascii=False, indent=2)
+        json_path = "/srv/samba/hub/ultimo_horario.json"
+        try:
+            with open(json_path, "w", encoding="utf-8") as f:
+                json.dump({
+                    "fecha_procesamiento": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "archivo_origen": os.path.basename(ruta_archivo),
+                    "total_clases": len(clases),
+                    "clases": clases
+                }, f, ensure_ascii=False, indent=2)
+            os.chmod(json_path, 0o777)
+        except Exception as e:
+            log(f"[-] Error guardando JSON: {e}")
             
         return clases
     else:
@@ -284,8 +304,9 @@ def escanear_carpeta_samba():
         
     for fname in os.listdir(SAMBA_ENTRADA):
         fpath = os.path.join(SAMBA_ENTRADA, fname)
-        if os.path.isfile(fpath) and fname.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.pdf')):
+        if os.path.isfile(fpath) and fname.lower().endswith(('.png', '.jpg', '.jpeg', '.bmp', '.pdf', '.webp')):
             log(f"[+] Detectado nuevo archivo en carpeta compartida Samba: {fname}")
+            time.sleep(1) # Esperar a que termine de escribirse completamente
             procesar_archivo_imagen(fpath)
             destino = os.path.join(SAMBA_PROCESADOS, f"{int(time.time())}_{fname}")
             shutil.move(fpath, destino)
@@ -315,12 +336,17 @@ def escanear_correos():
                 procesar_archivo_imagen(temp_path)
 
         cur_path = fpath.replace("/new/", "/cur/")
-        shutil.move(fpath, cur_path)
+        try:
+            shutil.move(fpath, cur_path)
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     if len(sys.argv) > 2 and sys.argv[1] == "--file":
         res = procesar_archivo_imagen(sys.argv[2])
-        print(json.dumps(res, ensure_ascii=False))
+        # Imprimir únicamente el JSON en stdout para que PHP lo pueda leer limpio
+        sys.stdout.write(json.dumps(res, ensure_ascii=False))
+        sys.stdout.flush()
         sys.exit(0)
 
     log("[*] Servicio ChatoSync activo. Monitoreando Samba (/entrada) y Correo (/Maildir)...")
@@ -330,4 +356,4 @@ if __name__ == "__main__":
             escanear_correos()
         except Exception as e:
             log(f"[-] Error en bucle de monitoreo: {e}")
-        time.sleep(3)
+        time.sleep(2)

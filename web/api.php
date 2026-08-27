@@ -19,7 +19,7 @@ if ($action === 'status') {
         'ocr' => ['name' => 'Motor OCR ChatoSync', 'active' => checkService('chatosync')],
     ];
     
-    $ip = trim(shell_exec("hostname -I | awk '{print $1}'"));
+    $ip = trim(shell_exec("hostname -I | awk '{print $1}'") ?? '192.168.137.102');
     $uptime = trim(shell_exec("uptime -p 2>/dev/null") ?? 'Activo');
     
     echo json_encode([
@@ -32,9 +32,10 @@ if ($action === 'status') {
 }
 
 if ($action === 'logs') {
-    $lines = 30;
-    if (file_exists('/var/log/chatosync.log')) {
-        $logs = shell_exec("tail -n $lines /var/log/chatosync.log 2>/dev/null");
+    $lines = 35;
+    $logFile = '/var/log/chatosync.log';
+    if (file_exists($logFile)) {
+        $logs = shell_exec("tail -n $lines $logFile 2>/dev/null");
     } else {
         $logs = "No se encontró archivo de log.";
     }
@@ -45,7 +46,8 @@ if ($action === 'logs') {
 if ($action === 'last_data') {
     $jsonFile = '/srv/samba/hub/ultimo_horario.json';
     if (file_exists($jsonFile)) {
-        $data = json_decode(file_get_contents($jsonFile), true);
+        $content = file_get_contents($jsonFile);
+        $data = json_decode($content, true);
         echo json_encode(['status' => 'ok', 'data' => $data], JSON_UNESCAPED_UNICODE);
     } else {
         echo json_encode(['status' => 'empty', 'message' => 'Aún no se ha procesado ningún horario.']);
@@ -55,20 +57,31 @@ if ($action === 'last_data') {
 
 if ($action === 'upload') {
     if (!isset($_FILES['horario']) || $_FILES['horario']['error'] !== UPLOAD_ERR_OK) {
-        echo json_encode(['status' => 'error', 'message' => 'Error al subir archivo.']);
+        echo json_encode(['status' => 'error', 'message' => 'Error al subir archivo desde el navegador.']);
         exit;
     }
     
+    $uploadDir = "/srv/samba/hub/entrada/";
+    if (!is_dir($uploadDir)) {
+        @mkdir($uploadDir, 0777, true);
+    }
+    @chmod($uploadDir, 0777);
+    
     $tmpName = $_FILES['horario']['tmp_name'];
     $origName = basename($_FILES['horario']['name']);
-    $dest = "/srv/samba/hub/entrada/" . time() . "_" . $origName;
+    $dest = $uploadDir . time() . "_" . $origName;
     
     if (move_uploaded_file($tmpName, $dest)) {
-        chmod($dest, 0777);
-        // Procesar inmediatamente con Python
-        $cmd = "/opt/chatosync-venv/bin/python /srv/samba/hub/procesar_horario.py --file " . escapeshellarg($dest) . " 2>&1";
+        @chmod($dest, 0777);
+        // Ejecutar procesamiento con Python
+        $cmd = "/opt/chatosync-venv/bin/python /srv/samba/hub/procesar_horario.py --file " . escapeshellarg($dest);
         $out = shell_exec($cmd);
+        
+        // Extraer JSON limpio del output
         $res = json_decode($out, true);
+        if (!$res && preg_match('/\[.*\]/s', $out, $matches)) {
+            $res = json_decode($matches[0], true);
+        }
         
         echo json_encode([
             'status' => 'ok',
@@ -77,33 +90,50 @@ if ($action === 'upload') {
             'raw_output' => $out
         ], JSON_UNESCAPED_UNICODE);
     } else {
-        echo json_encode(['status' => 'error', 'message' => 'No se pudo guardar el archivo.']);
+        echo json_encode(['status' => 'error', 'message' => 'No se pudo guardar el archivo en la carpeta del servidor.']);
     }
     exit;
 }
 
 if ($action === 'test_sample') {
-    $sample = "/root/ChatoSync/samples/horario_muestra.png";
-    if (!file_exists($sample)) {
-        $sample = "/home/chatosync/ChatoSync/samples/horario_muestra.png";
+    $samples = [
+        "/var/www/html/samples/horario_muestra.png",
+        "/srv/samba/hub/samples/horario_muestra.png",
+        "/root/ChatoSync/samples/horario_muestra.png",
+        "/home/chatosync/ChatoSync/samples/horario_muestra.png"
+    ];
+    
+    $sampleFile = null;
+    foreach ($samples as $s) {
+        if (file_exists($s)) {
+            $sampleFile = $s;
+            break;
+        }
     }
     
-    if (file_exists($sample)) {
-        $dest = "/srv/samba/hub/entrada/horario_muestra_" . time() . ".png";
-        copy($sample, $dest);
-        chmod($dest, 0777);
-        $cmd = "/opt/chatosync-venv/bin/python /srv/samba/hub/procesar_horario.py --file " . escapeshellarg($dest) . " 2>&1";
-        $out = shell_exec($cmd);
-        $res = json_decode($out, true);
-        
-        echo json_encode([
-            'status' => 'ok',
-            'message' => 'Horario de muestra procesado con éxito.',
-            'clases' => is_array($res) ? $res : []
-        ], JSON_UNESCAPED_UNICODE);
-    } else {
-        echo json_encode(['status' => 'error', 'message' => 'No se encontró archivo de muestra.']);
+    if (!$sampleFile) {
+        echo json_encode(['status' => 'error', 'message' => 'No se encontró archivo de muestra en el servidor.']);
+        exit;
     }
+    
+    $dest = "/srv/samba/hub/entrada/horario_muestra_" . time() . ".png";
+    @mkdir(dirname($dest), 0777, true);
+    @copy($sampleFile, $dest);
+    @chmod($dest, 0777);
+    
+    $cmd = "/opt/chatosync-venv/bin/python /srv/samba/hub/procesar_horario.py --file " . escapeshellarg($dest);
+    $out = shell_exec($cmd);
+    
+    $res = json_decode($out, true);
+    if (!$res && preg_match('/\[.*\]/s', $out, $matches)) {
+        $res = json_decode($matches[0], true);
+    }
+    
+    echo json_encode([
+        'status' => 'ok',
+        'message' => 'Horario de muestra procesado con éxito.',
+        'clases' => is_array($res) ? $res : []
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
