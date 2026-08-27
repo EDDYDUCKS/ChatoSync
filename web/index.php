@@ -43,6 +43,9 @@
                     <span class="h-2 w-2 rounded-full bg-emerald-400 pulse-green"></span>
                     <span class="text-slate-300">IP Servidor: <strong class="text-white" id="serverIp">192.168.137.102</strong></span>
                 </div>
+                <a href="/transfer.php" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition-colors text-xs font-semibold text-white flex items-center gap-1.5 shadow-md shadow-emerald-600/20">
+                    <i class="fa-solid fa-share-nodes"></i> Transfer
+                </a>
                 <a href="/nextcloud" target="_blank" class="px-3.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 transition-colors text-xs font-semibold text-white flex items-center gap-1.5 shadow-md shadow-blue-600/20">
                     <i class="fa-solid fa-cloud"></i> Nextcloud
                 </a>
