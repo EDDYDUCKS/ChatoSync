@@ -42,9 +42,30 @@ $uptime   = trim(shell_exec("uptime -p 2>/dev/null") ?? '—');
     --card:  #111111;
     --card2: #1a1a1a;
     --border:#2a2a2a;
+    --bg:    #0a0a0a;
+    --text:  #e5e5e5;
+    --text2: #aaaaaa;
+    --muted: #555555;
+    --sidebar:#0d0d0d;
 }
+/* ── Light theme ── */
+[data-theme="light"] {
+    --card:  #ffffff;
+    --card2: #f0f0f0;
+    --border:#e0e0e0;
+    --bg:    #f5f5f5;
+    --text:  #111111;
+    --text2: #444444;
+    --muted: #888888;
+    --sidebar:#ffffff;
+}
+[data-theme="light"] body { background:var(--bg); color:var(--text); }
+[data-theme="light"] aside { background:var(--sidebar)!important; }
+[data-theme="light"] header { background:var(--bg)!important; }
+[data-theme="light"] .kpi-red { text-shadow:none; color:#dc2626; }
 *{box-sizing:border-box;}
-body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#e5e5e5;min-height:100vh;overflow-x:hidden;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .25s,color .25s;}
+
 /* Scrollbar */
 ::-webkit-scrollbar{width:5px;height:5px;} ::-webkit-scrollbar-track{background:#111;} ::-webkit-scrollbar-thumb{background:#333;border-radius:9px;}
 /* Pulse red */
@@ -140,6 +161,13 @@ body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#e5e5e5;min-height:
                style="background:var(--redbg);border:1px solid rgba(220,38,38,.35);color:var(--red2);">
                 <i class="fa-solid fa-share-nodes"></i> Transfer Rápido
             </a>
+            <!-- Theme Toggle -->
+            <button id="themeBtn" onclick="toggleTheme()"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                    style="background:#1a1a1a;border:1px solid var(--border);color:#aaa;">
+                <i id="themeIcon" class="fa-solid fa-moon"></i>
+                <span id="themeLabel">Claro</span>
+            </button>
             <a href="/nextcloud" target="_blank"
                class="px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all"
                style="background:#1a1a1a;border:1px solid var(--border);color:#aaa;">
@@ -147,6 +175,7 @@ body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#e5e5e5;min-height:
             </a>
         </div>
     </header>
+
 
     <!-- ─── PANEL: DASHBOARD ─────────────────────────────── -->
     <section id="panel-main" class="panel p-6 space-y-6">
@@ -870,6 +899,29 @@ refreshStatus();
 refreshLogs();
 setInterval(refreshStatus,10000);
 setInterval(refreshLogs,5000);
+
+// ── Theme Toggle ──────────────────────────────────────────────────────────────
+function applyTheme(t){
+    document.documentElement.setAttribute('data-theme', t);
+    const icon  = document.getElementById('themeIcon');
+    const label = document.getElementById('themeLabel');
+    if(!icon||!label) return;
+    if(t==='light'){
+        icon.className='fa-solid fa-moon';
+        label.textContent='Oscuro';
+    } else {
+        icon.className='fa-solid fa-sun';
+        label.textContent='Claro';
+    }
+}
+function toggleTheme(){
+    const cur  = document.documentElement.getAttribute('data-theme')||'dark';
+    const next = cur==='light'?'dark':'light';
+    localStorage.setItem('chatosync-theme', next);
+    applyTheme(next);
+}
+// Aplicar tema guardado al cargar
+(function(){ applyTheme(localStorage.getItem('chatosync-theme')||'dark'); })();
 </script>
 </body>
 </html>

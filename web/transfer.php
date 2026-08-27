@@ -18,14 +18,23 @@ if (isset($_GET['del'])) {
     if (file_exists($path) && !is_dir($path)) { unlink($path); header("Location: transfer.php"); exit; }
 }
 
+// Archivos del sistema que NO deben mostrarse al público
+$SYSTEM_FILES = ['ultimo_horario.json','horario_ulsa.ics','procesar_horario.py','chatosync.service'];
+$SYSTEM_EXTS  = ['py','sh','json','ics','log','conf','service'];
+
 $files = [];
 if (is_dir($uploadDir)) {
     foreach (scandir($uploadDir) as $f) {
         if ($f==='.'||$f==='..'||is_dir($uploadDir.$f)) continue;
+        if (str_starts_with($f,'.')) continue; // archivos ocultos
+        if (in_array($f, $SYSTEM_FILES)) continue; // blacklist por nombre
+        $ext = strtolower(pathinfo($f,PATHINFO_EXTENSION));
+        if (in_array($ext, $SYSTEM_EXTS)) continue; // blacklist por extensión
         $files[] = ['name'=>$f,'size'=>filesize($uploadDir.$f),'date'=>filemtime($uploadDir.$f)];
     }
     usort($files, fn($a,$b)=>$b['date']-$a['date']);
 }
+
 
 function fmtSz($b){if($b>=1073741824)return round($b/1073741824,2).' GB';if($b>=1048576)return round($b/1048576,1).' MB';if($b>=1024)return round($b/1024,1).' KB';return $b.' B';}
 function fmtIco($e){$m=['pdf'=>'📄','doc'=>'📝','docx'=>'📝','zip'=>'🗜️','rar'=>'🗜️','7z'=>'🗜️','mp4'=>'🎬','avi'=>'🎬','mkv'=>'🎬','mp3'=>'🎵','jpg'=>'🖼️','jpeg'=>'🖼️','png'=>'🖼️','apk'=>'📱','iso'=>'💿','ova'=>'💻','exe'=>'⚙️','py'=>'🐍','sh'=>'🔧','txt'=>'📋'];return $m[$e]??'📁';}
@@ -43,24 +52,42 @@ $totalSize = array_sum(array_column($files,'size'));
 <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-:root{--red:#dc2626;--red2:#ef4444;--redbg:rgba(220,38,38,.12);--card:#111111;--border:#2a2a2a;}
+/* ── Dark theme (default) ── */
+:root{
+    --red:#dc2626;--red2:#ef4444;--redbg:rgba(220,38,38,.12);
+    --bg:#0a0a0a;--card:#111111;--card2:#1a1a1a;--border:#2a2a2a;
+    --text:#e5e5e5;--text2:#aaaaaa;--muted:#555555;
+}
+/* ── Light theme ── */
+[data-theme="light"]{
+    --bg:#f5f5f5;--card:#ffffff;--card2:#f0f0f0;--border:#e0e0e0;
+    --text:#111111;--text2:#444444;--muted:#888888;
+}
 *{box-sizing:border-box;}
-body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#e5e5e5;min-height:100vh;}
-::-webkit-scrollbar{width:5px;} ::-webkit-scrollbar-track{background:#111;} ::-webkit-scrollbar-thumb{background:#333;border-radius:9px;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s,color .25s;}
+::-webkit-scrollbar{width:5px;} ::-webkit-scrollbar-track{background:var(--card2);} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:9px;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 .fade-up{animation:fadeUp .35s ease both;}
-.row:hover{background:rgba(220,38,38,.05);}
+.row{transition:background .15s;}
+.row:hover{background:rgba(220,38,38,.06);}
 #dropZ.over{border-color:var(--red)!important;background:var(--redbg)!important;}
+.themed-card{background:var(--card);border:1px solid var(--border);}
+.themed-sub{background:var(--card2);border:1px solid var(--border);}
+.t-muted{color:var(--muted);}
+.t-text2{color:var(--text2);}
+/* Theme toggle button */
+#themeBtn{cursor:pointer;transition:all .2s;}
+#themeBtn:hover{opacity:.8;}
 </style>
 </head>
 <body>
 
 <!-- Header -->
 <header class="h-14 flex items-center justify-between px-6 border-b sticky top-0 z-30"
-        style="background:#0a0a0a;border-color:var(--border);">
+        style="background:var(--bg);border-color:var(--border);">
     <div class="flex items-center gap-4">
-        <a href="/" class="flex items-center gap-2 text-sm font-medium transition-colors"
-           style="color:#555;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#555'">
+        <a href="/" class="flex items-center gap-2 text-sm font-medium transition-colors t-muted"
+           onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted)'">
             <i class="fa-solid fa-arrow-left text-xs"></i> Dashboard
         </a>
         <div class="h-4 w-px" style="background:var(--border);"></div>
@@ -68,16 +95,26 @@ body{font-family:'Inter',sans-serif;background:#0a0a0a;color:#e5e5e5;min-height:
             <div class="h-6 w-6 rounded flex items-center justify-center text-xs font-black text-white" style="background:var(--red);">
                 <i class="fa-solid fa-share-nodes" style="font-size:10px;"></i>
             </div>
-            <span class="text-sm font-bold text-white">ChatoSync <span style="color:var(--red2);">Transfer</span></span>
+            <span class="text-sm font-bold" style="color:var(--text);">ChatoSync <span style="color:var(--red2);">Transfer</span></span>
         </div>
     </div>
-    <div class="flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-lg"
-         style="background:var(--card);border:1px solid var(--border);">
-        <span class="h-1.5 w-1.5 rounded-full" style="background:#22c55e;box-shadow:0 0 6px #22c55e;"></span>
-        <span style="color:#22c55e;"><?=$serverIP?></span>
-        <span style="color:#555;">· <?=count($files)?> archivos · <?=fmtSz($totalSize)?></span>
+    <div class="flex items-center gap-3">
+        <!-- Theme Toggle -->
+        <button id="themeBtn" onclick="toggleTheme()"
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium"
+                style="background:var(--card2);border:1px solid var(--border);color:var(--text2);">
+            <i id="themeIcon" class="fa-solid fa-moon"></i>
+            <span id="themeLabel">Claro</span>
+        </button>
+        <div class="flex items-center gap-2 text-xs font-mono px-3 py-1.5 rounded-lg"
+             style="background:var(--card);border:1px solid var(--border);">
+            <span class="h-1.5 w-1.5 rounded-full" style="background:#22c55e;box-shadow:0 0 6px #22c55e;"></span>
+            <span style="color:#22c55e;"><?=$serverIP?></span>
+            <span class="t-muted">· <?=count($files)?> archivos · <?=fmtSz($totalSize)?></span>
+        </div>
     </div>
 </header>
+
 
 <main class="max-w-5xl mx-auto px-4 py-6 space-y-5">
 
@@ -250,6 +287,31 @@ function doUpload(){
     xhr.open('POST','transfer.php',true);
     xhr.send(fd);
 }
+
+// ── Theme Toggle ──────────────────────────────────────────────────────────────
+function applyTheme(t){
+    document.documentElement.setAttribute('data-theme', t);
+    const icon = document.getElementById('themeIcon');
+    const label = document.getElementById('themeLabel');
+    if(t==='light'){
+        icon.className='fa-solid fa-moon';
+        label.textContent='Oscuro';
+    } else {
+        icon.className='fa-solid fa-sun';
+        label.textContent='Claro';
+    }
+}
+function toggleTheme(){
+    const cur = document.documentElement.getAttribute('data-theme')||'dark';
+    const next = cur==='light'?'dark':'light';
+    localStorage.setItem('chatosync-theme', next);
+    applyTheme(next);
+}
+// Cargar preferencia guardada
+(function(){
+    const saved = localStorage.getItem('chatosync-theme')||'dark';
+    applyTheme(saved);
+})();
 </script>
 </body>
 </html>
