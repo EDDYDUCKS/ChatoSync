@@ -23,14 +23,9 @@ $totalSize = array_sum(array_column($hubFiles,'size'));
 function fmtSize($b){if($b>=1073741824)return round($b/1073741824,1).'GB';if($b>=1048576)return round($b/1048576,1).'MB';if($b>=1024)return round($b/1024,1).'KB';return $b.'B';}
 function fmtIcon($ext){$m=['pdf'=>'📄','doc'=>'📝','docx'=>'📝','zip'=>'🗜️','rar'=>'🗜️','mp4'=>'🎬','avi'=>'🎬','mp3'=>'🎵','jpg'=>'🖼️','jpeg'=>'🖼️','png'=>'🖼️','apk'=>'📱','ova'=>'💻','exe'=>'⚙️'];return $m[$ext]??'📁';}
 
-// ─── Último horario procesado ────────────────────────────────────────────────
-$initialSchedule = [];
+// ─── Estado de Horario 100% Efímero (0 por defecto, sin persistencia en servidor) ───
 $classCount = 0;
-$lastJson = "/srv/samba/hub/ultimo_horario.json";
-$lastSchedule = [];
 $lastProcessed = null;
-if (file_exists($lastJson)){$d=json_decode(file_get_contents($lastJson),true);if(is_array($d)){$lastSchedule=$d;$lastProcessed=filemtime($lastJson);}}
-$classCount = count($lastSchedule);
 
 $serverIP = trim(shell_exec("hostname -I | awk '{print $1}'") ?? '192.168.137.102');
 $uptime   = trim(shell_exec("uptime -p 2>/dev/null") ?? '—');
@@ -795,14 +790,29 @@ function renderVisualSchedule(clases) {
         if(col) col.innerHTML = '';
     });
 
-    const colores = {
-        '0808': { bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.4)', text: '#ef4444' },
-        '0305': { bg: 'rgba(59, 130, 246, 0.15)', border: 'rgba(59, 130, 246, 0.4)', text: '#3b82f6' },
-        '0303': { bg: 'rgba(16, 185, 129, 0.15)', border: 'rgba(16, 185, 129, 0.4)', text: '#10b981' },
-        '0603': { bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.4)', text: '#f59e0b' },
-    };
+    const kpiCount = document.getElementById('kpiClassCount');
+    const kpiLast  = document.getElementById('kpiLastProc');
 
-    if(!clases || !clases.length) return;
+    if(!clases || !clases.length) {
+        if(kpiCount) kpiCount.textContent = '0';
+        if(kpiLast)  kpiLast.textContent  = 'Sin horario';
+        return;
+    }
+
+    if(kpiCount) kpiCount.textContent = clases.length;
+    if(kpiLast)  kpiLast.textContent  = 'Activo en sesión';
+
+    const colores = {
+        '0006': { bg: 'rgba(59, 130, 246, 0.15)', border: 'rgba(59, 130, 246, 0.4)', text: '#3b82f6' },
+        '0308': { bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.4)', text: '#ef4444' },
+        '0813': { bg: 'rgba(16, 185, 129, 0.15)', border: 'rgba(16, 185, 129, 0.4)', text: '#10b981' },
+        '0003': { bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.4)', text: '#f59e0b' },
+        '0407': { bg: 'rgba(168, 85, 247, 0.15)', border: 'rgba(168, 85, 247, 0.4)', text: '#a855f7' },
+        '0410': { bg: 'rgba(236, 72, 153, 0.15)', border: 'rgba(236, 72, 153, 0.4)', text: '#ec4899' },
+        '0406': { bg: 'rgba(14, 165, 233, 0.15)', border: 'rgba(14, 165, 233, 0.4)', text: '#0ea5e9' },
+        '0306': { bg: 'rgba(132, 204, 22, 0.15)', border: 'rgba(132, 204, 22, 0.4)', text: '#84cc16' },
+        '0302': { bg: 'rgba(249, 115, 22, 0.15)', border: 'rgba(249, 115, 22, 0.4)', text: '#f97316' },
+    };
 
     clases.forEach((c, idx) => {
         const dia = c.dia || 'Lu';
@@ -1007,6 +1017,7 @@ function exportAndDownloadICS() {
     URL.revokeObjectURL(url);
 
     alert('✓ Calendario descargado con éxito.\nAl abrirlo en tu teléfono se importarán todas tus clases en Google Calendar / Apple Calendar con alarmas automáticas.');
+    clearMySchedule();
 }
 
 function testSampleSchedule() {
