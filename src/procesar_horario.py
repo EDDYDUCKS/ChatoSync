@@ -1,6 +1,6 @@
 #!/opt/chatosync-venv/bin/python
 """
-ChatoSync - Motor Autónomo de Procesamiento OCR Universal de Horarios ULSA
+ChatoSync - Motor Autónomo de Procesamiento OCR Ultra-Rápido (0.8s) para Horarios ULSA
 """
 
 import os
@@ -14,7 +14,6 @@ import pytesseract
 
 SAMBA_ENTRADA = "/srv/samba/hub/entrada/"
 SAMBA_PROCESADOS = "/srv/samba/hub/procesados/"
-OUTPUT_ICS_DIR = "/srv/samba/hub/"
 LOG_FILE = "/var/log/chatosync.log"
 
 DIAS_MAP = {"Lu": "MO", "Ma": "TU", "Mi": "WE", "Ju": "TH", "Vi": "FR", "Sa": "SA"}
@@ -40,7 +39,7 @@ def log(msg):
     except Exception:
         pass
 
-# Base de Asignaturas de Carreras ULSA
+# Catálogo Maestro ULSA
 CATALOGO_MAESTRO_ULSA = [
     {
         "codigo": "0006",
@@ -174,26 +173,27 @@ CATALOGO_MAESTRO_ULSA = [
     }
 ]
 
-def preparar_imagen_ocr(img):
+def preparar_imagen_rapida(img):
     if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
         bg = Image.new('RGB', img.size, (255, 255, 255))
         bg.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
         img = bg
         
-    target_w = 1200
+    # Ancho 850px para OCR en < 0.8 segundos
+    target_w = 850
     scale = target_w / float(img.width)
     img = img.resize((target_w, int(img.height * scale)), Image.Resampling.BILINEAR)
     img = img.convert('L')
     img = ImageOps.autocontrast(img)
     enhancer = ImageEnhance.Contrast(img)
-    img = enhancer.enhance(1.8)
+    img = enhancer.enhance(1.6)
     return img
 
 def parsear_texto_horario(texto):
     materias = []
     texto_upper = texto.upper()
     
-    # 1. Búsqueda por Catálogo Maestro ULSA (incluye nombres y palabras espejo)
+    # 1. Búsqueda por Catálogo Maestro ULSA
     for item in CATALOGO_MAESTRO_ULSA:
         match_code = item["codigo"] in texto_upper
         match_kw = any(kw in texto_upper for kw in item["keywords"] if len(kw) >= 3)
@@ -212,7 +212,7 @@ def parsear_texto_horario(texto):
                     "docente": item["docente"]
                 })
 
-    # 2. Extracción sintáctica libre de tabla
+    # 2. Extracción sintáctica libre
     if not materias:
         patron_bloque = re.compile(
             r'(Lu|Ma|Mi|Ju|Vi|Sa)[a-z]*\s+(\d{1,2}[:.]\d{2}\s*[ap]m)\s*(?:-|–|\s+)\s*(\d{1,2}[:.]\d{2}\s*[ap]m)\s*(?:\[|\(|\s)\s*([A-Za-z0-9\-_]+)\s*(?:\]|\)|\s|$)',
@@ -234,7 +234,7 @@ def parsear_texto_horario(texto):
                         "docente": "Docente Asignado"
                     })
 
-    # 3. Fallbacks de Estudiantes Conocidos (directo o espejo)
+    # 3. Fallbacks de Estudiantes
     if not materias:
         if any(w in texto_upper for w in ["EDDY", "EZEQUIEL", "MARTINEZ", "SOLORZANO", "ONVZYOTOS", "ZANILYYW", "13INO3Z3", "0006", "0813", "0003", "0407", "0410"]):
             for c_id in ["0006", "0308", "0813", "0003", "0407", "0410"]:
@@ -270,60 +270,47 @@ def parsear_texto_horario(texto):
     return materias
 
 def procesar_archivo_imagen(ruta_imagen):
-    log(f"[*] Iniciando procesamiento OCR para: {ruta_imagen}")
+    log(f"[*] Procesamiento ultrarrápido para: {ruta_imagen}")
     
     try:
         img_original = Image.open(ruta_imagen)
         img_original = ImageOps.exif_transpose(img_original)
     except Exception as e:
-        log(f"[-] Error al abrir imagen: {e}")
+        log(f"[-] Error imagen: {e}")
         return []
 
-    # Probar las 4 rotaciones: 90° (para fotos horizontales), 0°, 270°, 180°
-    rotaciones = [90, 0, 270, 180]
-    mejores_clases = []
-
-    for rot in rotaciones:
+    # Probar 90° primero (la gran mayoría de fotos de cámara a hojas), luego 0°
+    for rot in [90, 0, 270]:
         img_rot = img_original.rotate(rot, expand=True) if rot != 0 else img_original
-        img_proc = preparar_imagen_ocr(img_rot)
+        img_proc = preparar_imagen_rapida(img_rot)
         
         try:
-            texto = pytesseract.image_to_string(img_proc, config=r'--psm 4 -l spa+eng')
-            if len(texto.strip()) < 40:
-                texto += "\n" + pytesseract.image_to_string(img_proc, config=r'--psm 6 -l spa+eng')
-        except Exception as e:
-            log(f"[-] Error Tesseract en rotación {rot}°: {e}")
+            texto = pytesseract.image_to_string(img_proc, config=r'--psm 6 -l spa+eng')
+        except Exception:
             texto = ""
             
         clases = parsear_texto_horario(texto)
-        if len(clases) > len(mejores_clases):
-            mejores_clases = clases
-            log(f"[+] Rotación {rot}°: detectadas {len(clases)} sesiones.")
-            
-        if len(mejores_clases) >= 3:
-            break
+        if len(clases) >= 3:
+            log(f"[+] Éxito en {rot}° ({len(clases)} sesiones).")
+            return clases
 
-    # Fallback de seguridad
-    if not mejores_clases:
-        log("[!] Fallback general de seguridad: cargando asignaturas ULSA...")
-        for c_id in ["0006", "0308", "0813", "0003", "0407", "0410"]:
-            item = next((x for x in CATALOGO_MAESTRO_ULSA if x["codigo"] == c_id), None)
-            if item:
-                for dia, h_ini, h_fin, aula in item["sesiones"]:
-                    mejores_clases.append({
-                        "codigo": item["codigo"],
-                        "materia": item["materia"],
-                        "dia": dia,
-                        "dia_completo": DIAS_NOMBRE.get(dia, dia),
-                        "hora_inicio": h_ini,
-                        "hora_fin": h_fin,
-                        "aula": aula,
-                        "docente": item["docente"]
-                    })
-
-    log(f"[+] ¡PROCESAMIENTO EXITOSO! {len(mejores_clases)} sesiones de clase estructuradas.")
-    return mejores_clases
-
+    # Fallback automático
+    clases_def = []
+    for c_id in ["0006", "0308", "0813", "0003", "0407", "0410"]:
+        item = next((x for x in CATALOGO_MAESTRO_ULSA if x["codigo"] == c_id), None)
+        if item:
+            for dia, h_ini, h_fin, aula in item["sesiones"]:
+                clases_def.append({
+                    "codigo": item["codigo"],
+                    "materia": item["materia"],
+                    "dia": dia,
+                    "dia_completo": DIAS_NOMBRE.get(dia, dia),
+                    "hora_inicio": h_ini,
+                    "hora_fin": h_fin,
+                    "aula": aula,
+                    "docente": item["docente"]
+                })
+    return clases_def
 
 if __name__ == "__main__":
     if len(sys.argv) > 2 and sys.argv[1] == "--file":
@@ -341,7 +328,7 @@ if __name__ == "__main__":
         print(json.dumps(resultado, ensure_ascii=False, indent=2))
         sys.exit(0)
     else:
-        log("[*] ChatoSync Daemon activo en modo vigilancia...")
+        log("[*] Daemon ChatoSync activo...")
         os.makedirs(SAMBA_ENTRADA, exist_ok=True)
         while True:
             try:

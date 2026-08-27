@@ -438,11 +438,23 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
                         <p class="text-xs font-semibold text-white">Toca aquí o arrastra tu imagen</p>
                         <p class="text-[10px]" style="color:#555;">PNG, JPG, JPEG o PDF</p>
                     </div>
-                    <div id="ocrLoader" class="hidden space-y-2 pointer-events-none">
-                        <i class="fa-solid fa-circle-notch fa-spin text-2xl" style="color:var(--red);"></i>
-                        <p class="text-xs font-semibold text-white">Extrayendo clases con Tesseract...</p>
+                    <div id="ocrLoader" class="hidden space-y-3 pointer-events-none">
+                        <div class="flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-circle-notch fa-spin text-xl" style="color:var(--red);"></i>
+                            <span id="ocrStatusMsg" class="text-xs font-bold text-white">Subiendo imagen...</span>
+                        </div>
+                        <div class="h-2 w-full rounded-full overflow-hidden" style="background:#1a1a1a;">
+                            <div id="ocrProgressBar" class="h-full transition-all duration-300 rounded-full" style="width: 15%; background: var(--red);"></div>
+                        </div>
+                        <div class="flex justify-between text-[10px]" style="color:#666;">
+                            <span id="ocrStep1" class="text-white font-bold">1. Envío</span>
+                            <span id="ocrStep2">2. Rotación</span>
+                            <span id="ocrStep3">3. Tesseract OCR</span>
+                            <span id="ocrStep4">4. Calendario</span>
+                        </div>
                     </div>
                 </div>
+
 
                 <div class="space-y-2">
                     <button onclick="testSampleSchedule()" class="w-full py-2.5 rounded-xl text-xs font-bold transition-colors"
@@ -1049,33 +1061,80 @@ function setupOCRUpload() {
 function processOCRFile(file) {
     const loader = document.getElementById('ocrLoader');
     const prompt = document.getElementById('ocrPrompt');
+    const statusMsg = document.getElementById('ocrStatusMsg');
+    const pBar = document.getElementById('ocrProgressBar');
+    const s1 = document.getElementById('ocrStep1'), s2 = document.getElementById('ocrStep2');
+    const s3 = document.getElementById('ocrStep3'), s4 = document.getElementById('ocrStep4');
+
     if(loader) loader.classList.remove('hidden');
     if(prompt) prompt.classList.add('hidden');
+
+    const updateStep = (pct, msg, stepNum) => {
+        if(pBar) pBar.style.width = pct + '%';
+        if(statusMsg) statusMsg.textContent = msg;
+        [s1, s2, s3, s4].forEach((el, idx) => {
+            if(!el) return;
+            if(idx + 1 <= stepNum) {
+                el.style.color = '#fff';
+                el.style.fontWeight = 'bold';
+            } else {
+                el.style.color = '#555';
+                el.style.fontWeight = 'normal';
+            }
+        });
+    };
+
+    updateStep(25, '1/4 Subiendo foto al servidor...', 1);
 
     const fd = new FormData();
     fd.append('horario', file);
 
-    fetch('api.php?action=upload', { method: 'POST', body: fd })
-        .then(r => r.json())
-        .then(d => {
+    const xhr = new XMLHttpRequest();
+    xhr.upload.onprogress = e => {
+        if(e.lengthComputable) {
+            const p = Math.round((e.loaded / e.total) * 40);
+            if(pBar) pBar.style.width = p + '%';
+        }
+    };
+
+    const t1 = setTimeout(() => updateStep(55, '2/4 Detectando rotación y nitidez...', 2), 600);
+    const t2 = setTimeout(() => updateStep(80, '3/4 Ejecutando Tesseract OCR...', 3), 1400);
+
+    xhr.onload = () => {
+        clearTimeout(t1); clearTimeout(t2);
+        updateStep(100, '4/4 ¡Horario estructurado!', 4);
+
+        setTimeout(() => {
             if(loader) loader.classList.add('hidden');
             if(prompt) prompt.classList.remove('hidden');
+        }, 400);
+
+        try {
+            const d = JSON.parse(xhr.responseText);
             if(d.status === 'ok' && d.clases && d.clases.length) {
                 currentSchedule = d.clases;
                 sessionStorage.setItem('my_schedule', JSON.stringify(currentSchedule));
                 renderVisualSchedule(currentSchedule);
                 renderTableSchedule(currentSchedule);
-                alert('✓ Horario procesado con éxito: ' + d.clases.length + ' sesiones detectadas.');
             } else {
                 alert('[-] No se detectaron patrones válidos en la imagen.');
             }
-        })
-        .catch(() => {
-            if(loader) loader.classList.add('hidden');
-            if(prompt) prompt.classList.remove('hidden');
-            alert('Error al comunicarse con el servidor OCR.');
-        });
+        } catch(e) {
+            alert('Error al procesar respuesta del servidor.');
+        }
+    };
+
+    xhr.onerror = () => {
+        clearTimeout(t1); clearTimeout(t2);
+        if(loader) loader.classList.add('hidden');
+        if(prompt) prompt.classList.remove('hidden');
+        alert('Error de conexión de red con el servidor OCR.');
+    };
+
+    xhr.open('POST', 'api.php?action=upload', true);
+    xhr.send(fd);
 }
+
 
 // ─── Transfer Drag & Drop ────────────────────────────────────────────────────
 
