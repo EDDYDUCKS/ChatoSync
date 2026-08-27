@@ -322,12 +322,8 @@ def procesar_archivo_imagen(ruta_imagen):
                     })
 
     log(f"[+] ¡PROCESAMIENTO EXITOSO! {len(mejores_clases)} sesiones de clase estructuradas.")
-    try:
-        with open("/srv/samba/hub/ultimo_horario.json", "w", encoding="utf-8") as f_json:
-            json.dump(mejores_clases, f_json, ensure_ascii=False, indent=2)
-    except Exception: pass
-    
     return mejores_clases
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 2 and sys.argv[1] == "--file":

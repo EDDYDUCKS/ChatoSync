@@ -24,6 +24,8 @@ function fmtSize($b){if($b>=1073741824)return round($b/1073741824,1).'GB';if($b>
 function fmtIcon($ext){$m=['pdf'=>'📄','doc'=>'📝','docx'=>'📝','zip'=>'🗜️','rar'=>'🗜️','mp4'=>'🎬','avi'=>'🎬','mp3'=>'🎵','jpg'=>'🖼️','jpeg'=>'🖼️','png'=>'🖼️','apk'=>'📱','ova'=>'💻','exe'=>'⚙️'];return $m[$ext]??'📁';}
 
 // ─── Último horario procesado ────────────────────────────────────────────────
+$initialSchedule = [];
+$classCount = 0;
 $lastJson = "/srv/samba/hub/ultimo_horario.json";
 $lastSchedule = [];
 $lastProcessed = null;
@@ -469,11 +471,19 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
                         <span id="detectedCountBadge" class="text-xs px-2 py-0.5 rounded font-semibold"
                               style="background:var(--redbg);color:var(--red2);">0 clases</span>
                     </div>
-                    <button onclick="exportAndDownloadICS()" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white flex items-center gap-1.5 shadow-lg"
-                            style="background:var(--red);">
-                        <i class="fa-solid fa-calendar-plus"></i>
-                        <span>📅 Sincronizar Calendario (.ICS)</span>
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button onclick="clearMySchedule()" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                                style="background:#1a1a1a;border:1px solid var(--border);color:#888;" title="Limpiar datos de esta sesión">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                            <span>Limpiar</span>
+                        </button>
+                        <button onclick="exportAndDownloadICS()" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white flex items-center gap-1.5 shadow-lg"
+                                style="background:var(--red);">
+                            <i class="fa-solid fa-calendar-plus"></i>
+                            <span>📅 Sincronizar Calendario (.ICS)</span>
+                        </button>
+                    </div>
+
                 </div>
 
                 <!-- Tabla editable -->
@@ -715,7 +725,13 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 // ─── Variables Globales ───────────────────────────────────────────────────────
 const serverIP = '<?=$serverIP?>';
 const transferURL = 'http://' + serverIP + '/transfer.php';
-let currentSchedule = <?=json_encode($lastSchedule, JSON_UNESCAPED_UNICODE)?> || [];
+// Estado de horario 100% efímero por sesión de navegador
+let currentSchedule = [];
+try {
+    const _stored = sessionStorage.getItem('my_schedule');
+    if(_stored) currentSchedule = JSON.parse(_stored) || [];
+} catch(e){}
+
 
 // ─── QR Codes ────────────────────────────────────────────────────────────────
 if(document.getElementById('qrMini')){
@@ -894,35 +910,91 @@ function deleteClassRow(index) {
     renderTableSchedule(currentSchedule);
 }
 
+function clearMySchedule() {
+    sessionStorage.removeItem('my_schedule');
+    currentSchedule = [];
+    renderVisualSchedule([]);
+    renderTableSchedule([]);
+}
+
 function exportAndDownloadICS() {
     if(!currentSchedule || !currentSchedule.length) {
         alert('No hay materias en el horario para exportar.');
         return;
     }
 
-    fetch('api.php?action=export_ics', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(currentSchedule)
-    })
-    .then(r => r.json())
-    .then(data => {
-        if(data.status === 'ok') {
-            // Iniciar descarga automática del .ics
-            const a = document.createElement('a');
-            a.href = data.ics_url || '/download.php?file=horario_ulsa.ics';
-            a.download = 'horario_ulsa.ics';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            alert('✓ Calendario generado con éxito con recurrencia para todo el cuatrimestre y alarmas automáticas.');
-        } else {
-            alert('Error al generar calendario: ' + (data.message || 'Error'));
-        }
-    })
-    .catch(() => {
-        window.location.href = '/download.php?file=horario_ulsa.ics';
+    // Generación directa de .ICS en el navegador del estudiante (100% Privado, Cero almacenamiento en servidor)
+    const diaNum = { 'Lu': 1, 'Ma': 2, 'Mi': 3, 'Ju': 4, 'Vi': 5, 'Sa': 6 };
+    const rruleDays = { 'Lu': 'MO', 'Ma': 'TU', 'Mi': 'WE', 'Ju': 'TH', 'Vi': 'FR', 'Sa': 'SA' };
+    
+    let icsLines = [
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//ChatoSync//ULSA Schedule Hub//ES",
+        "CALSCALE:GREGORIAN",
+        "METHOD:PUBLISH",
+        "X-WR-CALNAME:Horario ULSA 2026",
+        "X-WR-TIMEZONE:America/Managua"
+    ];
+
+    const baseYear = 2026, baseMonth = 8; // Agosto 2026
+    const baseDayMap = { 'Lu': 24, 'Ma': 25, 'Mi': 26, 'Ju': 27, 'Vi': 28, 'Sa': 29 };
+
+    currentSchedule.forEach((c, idx) => {
+        const dCode = c.dia || 'Lu';
+        const startDay = baseDayMap[dCode] || 24;
+        
+        // Formatear horas (ej: "08:00 am" -> "080000")
+        const parseTime = (tStr) => {
+            const m = tStr.match(/(\d{1,2})[:.](\d{2})\s*([ap]m)?/i);
+            if(!m) return "080000";
+            let h = parseInt(m[1]), min = m[2];
+            const isPM = m[3] && m[3].toLowerCase() === 'pm';
+            const isAM = m[3] && m[3].toLowerCase() === 'am';
+            if(isPM && h < 12) h += 12;
+            if(isAM && h === 12) h = 0;
+            return String(h).padStart(2, '0') + min + '00';
+        };
+
+        const tStart = parseTime(c.hora_inicio || "08:00 am");
+        const tEnd = parseTime(c.hora_fin || "09:40 am");
+        const dtStart = `202608${String(startDay).padStart(2,'0')}T${tStart}`;
+        const dtEnd = `202608${String(startDay).padStart(2,'0')}T${tEnd}`;
+        const rruleDay = rruleDays[dCode] || 'MO';
+
+        icsLines.push(
+            "BEGIN:VEVENT",
+            `UID:chatosync-${Date.now()}-${idx}@ulsa.edu.ni`,
+            `DTSTAMP:20260824T000000Z`,
+            `DTSTART;TZID=America/Managua:${dtStart}`,
+            `DTEND;TZID=America/Managua:${dtEnd}`,
+            `RRULE:FREQ=WEEKLY;BYDAY=${rruleDay};UNTIL=20261218T235959Z`,
+            `SUMMARY:[${c.codigo}] ${c.materia}`,
+            `LOCATION:Aula ${c.aula} - ULSA`,
+            `DESCRIPTION:Docente: ${c.docente || 'Por asignar'}\\nCarrera: Ing. Cibernética Electrónica\\nGenerado con ChatoSync`,
+            "BEGIN:VALARM",
+            "ACTION:DISPLAY",
+            "DESCRIPTION:Recordatorio de clase ULSA",
+            "TRIGGER:-PT15M",
+            "END:VALARM",
+            "END:VEVENT"
+        );
     });
+
+    icsLines.push("END:VCALENDAR");
+
+    // Descarga instantánea de archivo Blob nativo (cero bytes en el servidor)
+    const blob = new Blob([icsLines.join("\r\n")], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'horario_ulsa.ics';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    alert('✓ Calendario descargado con éxito.\nAl abrirlo en tu teléfono se importarán todas tus clases en Google Calendar / Apple Calendar con alarmas automáticas.');
 }
 
 function testSampleSchedule() {
@@ -938,9 +1010,10 @@ function testSampleSchedule() {
             if(prompt) prompt.classList.remove('hidden');
             if(d.status === 'ok' && d.clases && d.clases.length) {
                 currentSchedule = d.clases;
+                sessionStorage.setItem('my_schedule', JSON.stringify(currentSchedule));
                 renderVisualSchedule(currentSchedule);
                 renderTableSchedule(currentSchedule);
-                alert('✓ Horario de muestra procesado: se detectaron ' + d.clases.length + ' clases.');
+                alert('✓ Horario de muestra cargado: ' + d.clases.length + ' sesiones.');
             } else {
                 alert('No se pudieron extraer clases de la muestra.');
             }
@@ -989,6 +1062,7 @@ function processOCRFile(file) {
             if(prompt) prompt.classList.remove('hidden');
             if(d.status === 'ok' && d.clases && d.clases.length) {
                 currentSchedule = d.clases;
+                sessionStorage.setItem('my_schedule', JSON.stringify(currentSchedule));
                 renderVisualSchedule(currentSchedule);
                 renderTableSchedule(currentSchedule);
                 alert('✓ Horario procesado con éxito: ' + d.clases.length + ' sesiones detectadas.');
@@ -999,11 +1073,10 @@ function processOCRFile(file) {
         .catch(() => {
             if(loader) loader.classList.add('hidden');
             if(prompt) prompt.classList.remove('hidden');
-            alert('Error al comunicarse con el servidor OCR.');
-        });
 }
 
 // ─── Transfer Drag & Drop ────────────────────────────────────────────────────
+
 function handleTransferFile(inp) {
     if(!inp.files.length) return;
     const f = inp.files[0];
