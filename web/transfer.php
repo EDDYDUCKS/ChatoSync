@@ -87,9 +87,35 @@ $totalSize = array_sum(array_column($files,'size'));
 }
 /* ── Light theme ── */
 [data-theme="light"]{
-    --bg:#f5f5f5;--card:#ffffff;--card2:#f0f0f0;--border:#e0e0e0;
-    --text:#111111;--text2:#444444;--muted:#888888;
+    --bg:#f8fafc;--card:#ffffff;--card2:#f1f5f9;--border:#e2e8f0;
+    --text:#0f172a;--text2:#334155;--muted:#64748b;
 }
+[data-theme="light"] body { background: #f8fafc !important; color: #0f172a !important; }
+[data-theme="light"] .text-white,
+[data-theme="light"] [class*="text-white"],
+[data-theme="light"] strong,
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] h4 { color: #0f172a !important; }
+
+[data-theme="light"] .text-slate-100,
+[data-theme="light"] .text-slate-200,
+[data-theme="light"] .text-slate-300 { color: #1e293b !important; }
+[data-theme="light"] .text-slate-400 { color: #475569 !important; }
+[data-theme="light"] .text-slate-500 { color: #64748b !important; }
+
+[data-theme="light"] [style*="color:#fff"],
+[data-theme="light"] [style*="color: #fff"],
+[data-theme="light"] [style*="color:#ffffff"],
+[data-theme="light"] [style*="color: #ffffff"],
+[data-theme="light"] [style*="color:white"] { color: #0f172a !important; }
+
+[data-theme="light"] [style*="color:#aaa"],
+[data-theme="light"] [style*="color:#888"],
+[data-theme="light"] [style*="color:#666"],
+[data-theme="light"] [style*="color:#555"] { color: #475569 !important; }
+
 *{box-sizing:border-box;}
 body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;transition:background .25s,color .25s;}
 ::-webkit-scrollbar{width:5px;} ::-webkit-scrollbar-track{background:var(--card2);} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:9px;}

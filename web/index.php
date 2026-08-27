@@ -102,66 +102,106 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 /* ══════════════════════════════════════════════════
    LIGHT THEME — overrides Tailwind & hardcoded CSS
 ══════════════════════════════════════════════════ */
-/* Tailwind text-white y slate → dark text en light mode */
-[data-theme="light"] .text-white { color: #111111 !important; }
+[data-theme="light"] {
+    --card:    #ffffff;
+    --card2:   #f1f5f9;
+    --border:  #e2e8f0;
+    --bg:      #f8fafc;
+    --text:    #0f172a;
+    --text2:   #334155;
+    --muted:   #64748b;
+    --sidebar: #ffffff;
+}
+[data-theme="light"] body { background: #f8fafc !important; color: #0f172a !important; }
+[data-theme="light"] .text-white,
+[data-theme="light"] [class*="text-white"],
+[data-theme="light"] strong,
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] h4,
+[data-theme="light"] h5 { color: #0f172a !important; }
+
 [data-theme="light"] .text-slate-100,
 [data-theme="light"] .text-slate-200,
-[data-theme="light"] .text-slate-300 { color: #333333 !important; }
-[data-theme="light"] .text-slate-400 { color: #666666 !important; }
-[data-theme="light"] .text-slate-500 { color: #777777 !important; }
+[data-theme="light"] .text-slate-300 { color: #1e293b !important; }
+[data-theme="light"] .text-slate-400 { color: #475569 !important; }
+[data-theme="light"] .text-slate-500 { color: #64748b !important; }
+
+[data-theme="light"] [style*="color:#fff"],
+[data-theme="light"] [style*="color: #fff"],
+[data-theme="light"] [style*="color:#ffffff"],
+[data-theme="light"] [style*="color: #ffffff"],
+[data-theme="light"] [style*="color:white"] { color: #0f172a !important; }
+
+[data-theme="light"] [style*="color:#aaa"],
+[data-theme="light"] [style*="color:#888"],
+[data-theme="light"] [style*="color:#666"],
+[data-theme="light"] [style*="color:#555"] { color: #475569 !important; }
 
 /* Structural backgrounds */
 [data-theme="light"] aside,
-[data-theme="light"] #sidebar { background: #ffffff !important; border-color: #e0e0e0 !important; }
-[data-theme="light"] header  { background: #ffffff !important; border-color: #e0e0e0 !important; }
+[data-theme="light"] #sidebar { background: #ffffff !important; border-color: #e2e8f0 !important; }
+[data-theme="light"] header  { background: #ffffff !important; border-color: #e2e8f0 !important; }
 
-/* Cards: var(--card) ya los cubre, pero dividers no */
-[data-theme="light"] .divide-y > * { border-color: #e5e5e5 !important; }
+/* Cards & Dividers */
+[data-theme="light"] .divide-y > * { border-color: #e2e8f0 !important; }
 
 /* Tablas */
-[data-theme="light"] thead tr { background: #f0f0f0 !important; }
-[data-theme="light"] thead th { color: #555555 !important; border-color: #e5e5e5 !important; }
+[data-theme="light"] thead tr { background: #f1f5f9 !important; }
+[data-theme="light"] thead th { color: #475569 !important; border-color: #e2e8f0 !important; }
 
 /* Log / consola */
-[data-theme="light"] pre { background: #f0f0f0 !important; color: #222222 !important; border-color: #ddd !important; }
+[data-theme="light"] pre { background: #f1f5f9 !important; color: #0f172a !important; border-color: #cbd5e1 !important; }
 
 /* Sidebar nav buttons */
-[data-theme="light"] .sidebar-btn { color: #444444 !important; }
-[data-theme="light"] .sidebar-btn i { color: #999999 !important; }
+[data-theme="light"] .sidebar-btn { color: #334155 !important; }
+[data-theme="light"] .sidebar-btn i { color: #64748b !important; }
 
 /* Inputs y textareas */
 [data-theme="light"] input,
-[data-theme="light"] textarea { background: #f0f0f0 !important; border-color: #d0d0d0 !important; color: #111 !important; }
+[data-theme="light"] textarea { background: #f8fafc !important; border-color: #cbd5e1 !important; color: #0f172a !important; }
 
 /* Drop zones OCR */
 [data-theme="light"] #dropZoneOCR,
-[data-theme="light"] #dropZoneOCR2 { border-color: #cccccc !important; }
+[data-theme="light"] #dropZoneOCR2 { border-color: #cbd5e1 !important; }
 
 /* KPI numbers — sin glow en claro */
 [data-theme="light"] .kpi-red { text-shadow: none !important; color: #dc2626 !important; }
 
 /* Tooltip */
-[data-theme="light"] [data-tip]:hover::after { background: #fff; color: #111; border-color: #ddd; }
+[data-theme="light"] [data-tip]:hover::after { background: #fff; color: #0f172a; border-color: #cbd5e1; }
 
 /* Scrollbar en tema claro */
-[data-theme="light"] ::-webkit-scrollbar-track { background: #f0f0f0; }
-[data-theme="light"] ::-webkit-scrollbar-thumb { background: #ccc; }
+[data-theme="light"] ::-webkit-scrollbar-track { background: #f1f5f9; }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: #cbd5e1; }
 </style>
 
 </head>
 <body>
 
+<!-- ═══════════════════ MOBILE BACKDROP ═══════════════════ -->
+<div id="sidebarBackdrop" onclick="toggleMobileSidebar(false)"
+     class="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 hidden md:hidden transition-opacity"></div>
+
 <!-- ═══════════════════ SIDEBAR ═══════════════════ -->
-<aside id="sidebar" class="fixed top-0 left-0 h-full w-56 border-r z-40 flex flex-col"
+<aside id="sidebar"
+       class="fixed top-0 left-0 h-full w-64 md:w-56 border-r z-50 flex flex-col transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out"
        style="background:#0d0d0d;border-color:var(--border);">
     <!-- Logo -->
-    <div class="h-16 flex items-center gap-3 px-5 border-b" style="border-color:var(--border);">
-        <div class="h-8 w-8 rounded-lg flex items-center justify-center text-white font-black text-sm"
-             style="background:var(--red);">CS</div>
-        <div>
-            <div class="text-sm font-bold text-white">ChatoSync</div>
-            <div class="text-[10px]" style="color:#666;">ULSA Hub v2</div>
+    <div class="h-16 flex items-center justify-between px-5 border-b" style="border-color:var(--border);">
+        <div class="flex items-center gap-3">
+            <div class="h-8 w-8 rounded-lg flex items-center justify-center text-white font-black text-sm"
+                 style="background:var(--red);">CS</div>
+            <div>
+                <div class="text-sm font-bold text-white">ChatoSync</div>
+                <div class="text-[10px]" style="color:#666;">ULSA Hub v2</div>
+            </div>
         </div>
+        <button onclick="toggleMobileSidebar(false)" class="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-white"
+                style="background:var(--card2);border:1px solid var(--border);">
+            <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
     </div>
 
     <!-- Nav -->
@@ -176,7 +216,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
             ['panel-logs',    'fa-terminal',         'Logs',              false],
         ];
         foreach($nav as [$id,$icon,$label,$active]):?>
-        <button onclick="showPanel('<?=$id?>')"
+        <button onclick="showPanel('<?=$id?>'); toggleMobileSidebar(false);"
                 class="sidebar-btn w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left text-sm font-medium transition-all"
                 style="color:<?=$active?'#fff':'#888'?>;background:<?=$active?'var(--redbg)':''?>;border:1px solid <?=$active?'rgba(220,38,38,.3)':'transparent'?>;"
                 id="btn-<?=$id?>">
@@ -203,35 +243,46 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 </aside>
 
 <!-- ═══════════════════ MAIN CONTENT ═══════════════════ -->
-<div class="ml-56">
+<div class="ml-0 md:ml-56 flex-1 min-h-screen flex flex-col min-w-0 transition-all duration-300">
 
     <!-- Top bar -->
-    <header class="h-16 flex items-center justify-between px-6 border-b sticky top-0 z-30"
+    <header class="h-16 flex items-center justify-between px-4 md:px-6 border-b sticky top-0 z-30"
             style="background:#0a0a0a;border-color:var(--border);">
-        <div>
-            <h2 class="text-base font-bold text-white" id="pageTitle">Dashboard General</h2>
-            <p class="text-xs mt-0.5" style="color:#555;">ChatoSync · ULSA León · <?=date('d/m/Y H:i')?></p>
+        <div class="flex items-center gap-3 min-w-0">
+            <button type="button" onclick="toggleMobileSidebar(true)"
+                    class="md:hidden p-2 rounded-lg text-slate-300 hover:text-white flex items-center justify-center flex-shrink-0"
+                    style="background:var(--card2);border:1px solid var(--border);"
+                    title="Menú de Navegación">
+                <i class="fa-solid fa-bars text-sm"></i>
+            </button>
+            <div class="truncate">
+                <h2 class="text-sm md:text-base font-bold text-white truncate" id="pageTitle">Dashboard General</h2>
+                <p class="text-[10px] md:text-xs truncate" style="color:#555;">ChatoSync · ULSA León · <?=date('d/m/Y H:i')?></p>
+            </div>
         </div>
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 md:gap-3 flex-shrink-0">
             <a href="/transfer.php"
-               class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white flex items-center gap-1.5 transition-all"
+               class="px-2.5 md:px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all"
                style="background:var(--redbg);border:1px solid rgba(220,38,38,.35);color:var(--red2);">
-                <i class="fa-solid fa-share-nodes"></i> Transfer Rápido
+                <i class="fa-solid fa-share-nodes"></i>
+                <span class="hidden sm:inline">Transfer</span>
             </a>
             <!-- Theme Toggle -->
             <button id="themeBtn" onclick="toggleTheme()"
-                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                    class="flex items-center gap-1.5 px-2.5 md:px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
                     style="background:#1a1a1a;border:1px solid var(--border);color:#aaa;">
                 <i id="themeIcon" class="fa-solid fa-moon"></i>
-                <span id="themeLabel">Claro</span>
+                <span id="themeLabel" class="hidden sm:inline">Claro</span>
             </button>
             <a href="/nextcloud" target="_blank"
-               class="px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all"
+               class="px-2.5 md:px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all"
                style="background:#1a1a1a;border:1px solid var(--border);color:#aaa;">
-                <i class="fa-solid fa-cloud"></i> Nextcloud
+                <i class="fa-solid fa-cloud"></i>
+                <span class="hidden sm:inline">Nextcloud</span>
             </a>
         </div>
     </header>
+
 
 
     <!-- ─── PANEL: DASHBOARD ─────────────────────────────── -->
@@ -1056,6 +1107,22 @@ function patchInlineStyle(el, prop, lightVal, darkVal, isLight) {
     }
 }
 
+// ─── Mobile Sidebar Toggle ───────────────────────────────────────────────────
+function toggleMobileSidebar(open) {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('sidebarBackdrop');
+    if (!sidebar || !backdrop) return;
+    
+    const isOpen = open !== undefined ? open : sidebar.classList.contains('-translate-x-full');
+    if (isOpen) {
+        sidebar.classList.remove('-translate-x-full');
+        backdrop.classList.remove('hidden');
+    } else {
+        sidebar.classList.add('-translate-x-full');
+        backdrop.classList.add('hidden');
+    }
+}
+
 /**
  * Barre todos los elementos con un valor de color hardcodeado en style="" y los parchea.
  * Usa data-orig-style para poder restaurar al volver a dark.
@@ -1063,23 +1130,26 @@ function patchInlineStyle(el, prop, lightVal, darkVal, isLight) {
 function sweepInlineColors(isLight) {
     // Mapeo: fragmento del inline style → valor claro
     const colorPatches = [
-        { match: 'color:#555',    light: '#444' },
-        { match: 'color:#555555', light: '#444' },
-        { match: 'color:#666',    light: '#555' },
-        { match: 'color:#666666', light: '#555' },
-        { match: 'color:#888',    light: '#444' },
-        { match: 'color:#888888', light: '#444' },
-        { match: 'color:#aaa',    light: '#666' },
-        { match: 'color:#aaaaaa', light: '#666' },
-        { match: 'color:#e5e5e5', light: '#111' },  // body text blanco casi
+        { match: 'color:#fff',    light: '#0f172a' },
+        { match: 'color:#ffffff', light: '#0f172a' },
+        { match: 'color:white',   light: '#0f172a' },
+        { match: 'color:#e5e5e5', light: '#0f172a' },
+        { match: 'color:#555',    light: '#475569' },
+        { match: 'color:#555555', light: '#475569' },
+        { match: 'color:#666',    light: '#475569' },
+        { match: 'color:#666666', light: '#475569' },
+        { match: 'color:#888',    light: '#475569' },
+        { match: 'color:#888888', light: '#475569' },
+        { match: 'color:#aaa',    light: '#334155' },
+        { match: 'color:#aaaaaa', light: '#334155' },
     ];
     const bgPatches = [
-        { match: 'background:#0d0d0d', light: '#f5f5f5' },
-        { match: 'background:#0a0a0a', light: '#f5f5f5' },
+        { match: 'background:#0d0d0d', light: '#ffffff' },
+        { match: 'background:#0a0a0a', light: '#f8fafc' },
         { match: 'background:#111111', light: '#ffffff' },
         { match: 'background:#111;',   light: '#ffffff' },
-        { match: 'background:#1a1a1a', light: '#f0f0f0' },
-        { match: 'background:#141414', light: '#f5f5f5' },
+        { match: 'background:#1a1a1a', light: '#f1f5f9' },
+        { match: 'background:#141414', light: '#f8fafc' },
     ];
 
     if (isLight) {
@@ -1105,6 +1175,7 @@ function sweepInlineColors(isLight) {
         });
     }
 }
+
 
 function applyTheme(t) {
     const isLight = t === 'light';
