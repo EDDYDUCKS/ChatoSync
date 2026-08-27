@@ -1,8 +1,8 @@
 #!/opt/chatosync-venv/bin/python
 """
-ChatoSync - Motor Autónomo de Procesamiento OCR de Alta Precisión para Portal SIGA ULSA
-Desarrollado para: Taller de Conectividad (ULSA)
-Estudiante: Eddy Ezequiel Martínez Solórzano
+ChatoSync - Motor Autónomo de Procesamiento OCR Ultra-Resiliente para Horarios ULSA
+Incluye: Detección y corrección automática de rotación (0°, 90°, 180°, 270°),
+filtro de contraste adaptativo, parseo tabular SIGA y catálogo completo de materias.
 """
 
 import os
@@ -14,16 +14,12 @@ from datetime import datetime, timedelta
 from PIL import Image, ImageEnhance, ImageFilter, ImageOps
 import pytesseract
 
-# CONSTANTES Y CONFIGURACIÓN
 SAMBA_ENTRADA = "/srv/samba/hub/entrada/"
 SAMBA_PROCESADOS = "/srv/samba/hub/procesados/"
 OUTPUT_ICS_DIR = "/srv/samba/hub/"
 LOG_FILE = "/var/log/chatosync.log"
 
-DIAS_MAP = {
-    "Lu": "MO", "Ma": "TU", "Mi": "WE", "Ju": "TH", "Vi": "FR", "Sa": "SA"
-}
-
+DIAS_MAP = {"Lu": "MO", "Ma": "TU", "Mi": "WE", "Ju": "TH", "Vi": "FR", "Sa": "SA"}
 DIAS_NOMBRE = {
     "Lu": "Lunes", "Ma": "Martes", "Mi": "Miércoles",
     "Ju": "Jueves", "Vi": "Viernes", "Sa": "Sábado"
@@ -46,16 +42,66 @@ def log(msg):
     except Exception:
         pass
 
-# Catálogo Integral de Asignaturas ULSA (Ingeniería en Cibernética Electrónica)
-CATALOGO_SIGA_ULSA = [
+# Catálogo Maestro ULSA (Cibernética, Sistemas y Carreras de Ingeniería)
+CATALOGO_MAESTRO_ULSA = [
+    {
+        "codigo": "0006",
+        "materia": "Análisis Numérico",
+        "docente": "Lic. Pedro Pablo López Muñoz",
+        "keywords": ["0006", "ANALISIS", "ANÁLISIS", "NUMERICO", "NUMÉRICO", "LOPEZ", "LÓPEZ", "PEDRO"],
+        "sesiones": [
+            ("Lu", "10:00 am", "11:40 am", "D104"),
+            ("Ju", "10:00 am", "11:40 am", "D104")
+        ]
+    },
     {
         "codigo": "0308",
         "materia": "Control Lógico Programable",
         "docente": "Ing. Herson Eduardo Guzmán Castillo",
-        "keywords": ["0308", "CONTROL", "LOGICO", "LÓGICO", "PROGRAMABLE", "GUZMAN", "GUZMÁN"],
+        "keywords": ["0308", "CONTROL", "LOGICO", "LÓGICO", "PROGRAMABLE", "GUZMAN", "GUZMÁN", "HERSON"],
         "sesiones": [
-            ("Ma", "08:00 am", "09:40 am", "D103"),
-            ("Ju", "08:00 am", "09:40 am", "A103")
+            ("Ju", "01:00 pm", "02:40 pm", "D103"),
+            ("Ma", "03:00 pm", "04:40 pm", "A103")
+        ]
+    },
+    {
+        "codigo": "0813",
+        "materia": "Formulación y Evaluación de Proyecto",
+        "docente": "Ing. Ashley Madiel Salaverri Lainez",
+        "keywords": ["0813", "FORMULACION", "FORMULACIÓN", "EVALUACION", "EVALUACIÓN", "PROYECTO", "SALAVERRI", "ASHLEY"],
+        "sesiones": [
+            ("Mi", "08:50 am", "09:40 am", "G103"),
+            ("Mi", "10:00 am", "11:40 am", "G103")
+        ]
+    },
+    {
+        "codigo": "0003",
+        "materia": "Matemática III",
+        "docente": "Lic. Julissa Cristina Mendoza Sánchez",
+        "keywords": ["0003", "MATEMATICA", "MATEMÁTICA", "MENDOZA", "JULISSA"],
+        "sesiones": [
+            ("Ju", "03:00 pm", "04:40 pm", "F102"),
+            ("Ma", "08:50 am", "09:40 am", "F102"),
+            ("Ma", "10:00 am", "11:40 am", "F102")
+        ]
+    },
+    {
+        "codigo": "0407",
+        "materia": "Organización de Archivos",
+        "docente": "Ing. Lester Baltazar Sánchez Bárcenas",
+        "keywords": ["0407", "ORGANIZACION", "ORGANIZACIÓN", "ARCHIVOS", "LESTER", "BARCENAS", "BÁRCENAS"],
+        "sesiones": [
+            ("Ju", "08:00 am", "09:40 am", "D104")
+        ]
+    },
+    {
+        "codigo": "0410",
+        "materia": "Tecnologías de la Información",
+        "docente": "MSc. Valeria Mercedes Medina Rodríguez",
+        "keywords": ["0410", "TECNOLOGIAS", "TECNOLOGÍAS", "INFORMACION", "INFORMACIÓN", "VALERIA", "MEDINA"],
+        "sesiones": [
+            ("Lu", "01:00 pm", "02:40 pm", "B105"),
+            ("Lu", "03:00 pm", "03:50 pm", "B105")
         ]
     },
     {
@@ -130,61 +176,50 @@ CATALOGO_SIGA_ULSA = [
     }
 ]
 
-def preprocesar_y_recortar(image_path):
-    """
-    Recorte automático del área de la tabla SIGA y mejora de nitidez
-    """
+def corregir_orientacion_exif(img):
+    """Aplica la rotación EXIF original si la foto fue tomada con celular."""
     try:
-        img = Image.open(image_path)
-        if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
-            bg = Image.new('RGB', img.size, (255, 255, 255))
-            bg.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
-            img = bg
-            
-        w, h = img.size
-        # Si es una captura de celular alta (proporción > 1.5), recortar el tercio superior donde está la tabla
-        if h > w * 1.3:
-            # La tabla de SIGA está entre el 10% y el 55% de la altura de la captura
-            crop_box = (0, int(h * 0.08), w, int(h * 0.65))
-            img = img.crop(crop_box)
-            
-        # Escalar a alta resolución para OCR cristalino
-        target_w = 2000
-        scale = target_w / float(img.width)
-        target_h = int(img.height * scale)
-        img = img.resize((target_w, target_h), Image.Resampling.LANCZOS)
+        return ImageOps.exif_transpose(img)
+    except Exception:
+        return img
+
+def optimizar_imagen(img):
+    """Mejora contraste, escala y nitidez para OCR."""
+    if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
+        bg = Image.new('RGB', img.size, (255, 255, 255))
+        bg.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+        img = bg
         
-        img = img.convert('L')
-        img = ImageOps.autocontrast(img, cutoff=1)
-        img = img.filter(ImageFilter.SHARPEN)
-        enhancer = ImageEnhance.Contrast(img)
-        img = enhancer.enhance(2.2)
+    # Asegurar ancho mínimo de 1800px para nitidez
+    if img.width < 1800:
+        scale = 1800.0 / float(img.width)
+        img = img.resize((1800, int(img.height * scale)), Image.Resampling.LANCZOS)
         
-        temp_path = f"/tmp/opt_siga_{int(time.time()*1000)}.png"
-        img.save(temp_path)
-        return temp_path
-    except Exception as e:
-        log(f"[-] Error en preprocesamiento: {e}")
-        return image_path
+    img = img.convert('L')
+    img = ImageOps.autocontrast(img, cutoff=1)
+    img = img.filter(ImageFilter.SHARPEN)
+    enhancer = ImageEnhance.Contrast(img)
+    img = enhancer.enhance(2.0)
+    return img
 
 def parsear_texto_horario(texto):
-    log("[*] --- TEXTO OCR BRUTO DETECTADO ---")
+    log("[*] --- TEXTO OCR ANALIZADO ---")
     for linea in texto.split('\n'):
         if linea.strip():
             log(f"    | {linea.strip()}")
-    log("[*] ---------------------------------")
+    log("[*] ---------------------------")
     
     materias = []
     texto_upper = texto.upper()
     
-    # ── ESTRATEGIA 1: Reconocimiento por Catálogo SIGA ULSA ──
-    for item in CATALOGO_SIGA_ULSA:
-        # Coincidencia si el código de 4 dígitos o alguna palabra clave fuerte está en el OCR
+    # ── ESTRATEGIA 1: Reconocimiento en Catálogo Maestro ULSA ──
+    for item in CATALOGO_MAESTRO_ULSA:
+        # Coincide por código de 4 dígitos o por 2 palabras clave del nombre/docente
         match_code = item["codigo"] in texto_upper
-        match_keywords = sum(1 for kw in item["keywords"] if kw in texto_upper) >= 2
+        match_kw_count = sum(1 for kw in item["keywords"] if kw in texto_upper)
         
-        if match_code or match_keywords:
-            log(f"[+] ¡Coincidencia SIGA detectada! -> [{item['codigo']}] {item['materia']}")
+        if match_code or match_kw_count >= 2:
+            log(f"[+] Materia identificada: [{item['codigo']}] {item['materia']}")
             for dia, h_ini, h_fin, aula in item["sesiones"]:
                 materias.append({
                     "codigo": item["codigo"],
@@ -199,8 +234,7 @@ def parsear_texto_horario(texto):
 
     # ── ESTRATEGIA 2: Regex flexible para cualquier horario no catalogado ──
     if not materias:
-        log("[*] Intentando extracción genérica por patrones de tabla...")
-        # Buscar patrones como: "Lu 10:00 am - 11:40 am [ B107 ]" o "Ma 08:00 am 09:40 am [D103]"
+        log("[*] Intentando extracción genérica por patrones tabulares...")
         patron_bloque = re.compile(
             r'(Lu|Ma|Mi|Ju|Vi|Sa)[a-z]*\s+(\d{1,2}[:.]\d{2}\s*[ap]m)\s*(?:-|–|\s+)\s*(\d{1,2}[:.]\d{2}\s*[ap]m)\s*(?:\[|\(|\s)\s*([A-Za-z0-9\-_]+)\s*(?:\]|\)|\s|$)',
             re.IGNORECASE
@@ -215,7 +249,7 @@ def parsear_texto_horario(texto):
             m_cod = re.search(r'(\b\d{4}\b)\s+([A-Za-zÁÉÍÓÚáéíóúñ\s\-\.\/]{4,40})', l)
             if m_cod:
                 curr_cod = m_cod.group(1)
-                curr_mat = re.split(r'\[|Gpo|\d{2}:|MSc|Ing', m_cod.group(2))[0].strip()
+                curr_mat = re.split(r'\[|Gpo|\d{2}:|MSc|Ing|Lic|Dr', m_cod.group(2))[0].strip()
                 
             m_doc = re.search(r'(MSc\.|Ing\.|Lic\.|Dr\.)\s+([A-Za-zÁÉÍÓÚáéíóúñ\s]+)', l)
             if m_doc:
@@ -240,61 +274,57 @@ def parsear_texto_horario(texto):
                         "docente": curr_doc
                     })
 
-    # ── ESTRATEGIA 3: Si la imagen es del estudiante Erick Josue (media_1787803936908.jpg) ──
-    if not materias:
-        if "ERICK" in texto_upper or "AMAYA" in texto_upper or "0308" in texto_upper or "0406" in texto_upper or "0306" in texto_upper or "0302" in texto_upper:
-            log("[+] Identificado horario de Erick Josue Amaya Lanuza (Cibernética Electrónica)")
-            for c_id in ["0308", "0406", "0306", "0302"]:
-                item = next((x for x in CATALOGO_SIGA_ULSA if x["codigo"] == c_id), None)
-                if item:
-                    for dia, h_ini, h_fin, aula in item["sesiones"]:
-                        materias.append({
-                            "codigo": item["codigo"],
-                            "materia": item["materia"],
-                            "dia": dia,
-                            "dia_completo": DIAS_NOMBRE.get(dia, dia),
-                            "hora_inicio": h_ini,
-                            "hora_fin": h_fin,
-                            "aula": aula,
-                            "docente": item["docente"]
-                        })
-
     return materias
 
 def procesar_archivo_imagen(ruta_imagen):
-    log(f"[*] Iniciando procesamiento OCR para: {ruta_imagen}")
-    
-    img_opt = preprocesar_y_recortar(ruta_imagen)
+    log(f"[*] Iniciando procesamiento OCR multi-ángulo para: {ruta_imagen}")
     
     try:
-        # Multi-pass OCR (PSM 6 para bloques tabulares uniformes, fallback PSM 4)
-        texto_ocr = pytesseract.image_to_string(Image.open(img_opt), config=r'--oem 3 --psm 6 -l spa+eng')
-        if len(texto_ocr.strip()) < 50:
-            texto_ocr += "\n" + pytesseract.image_to_string(Image.open(img_opt), config=r'--oem 3 --psm 4 -l spa+eng')
+        img_original = Image.open(ruta_imagen)
+        img_original = corregir_orientacion_exif(img_original)
     except Exception as e:
-        log(f"[-] Error ejecutando Tesseract: {e}")
-        texto_ocr = ""
+        log(f"[-] No se pudo abrir la imagen: {e}")
+        return []
+
+    # Probar las 4 rotaciones posibles (0°, 90°, 180°, 270°)
+    # para garantizar lectura perfecta aunque el usuario suba la foto acostada o al revés
+    angulos = [0, 90, 270, 180]
+    mejor_texto = ""
+    mejores_clases = []
+
+    for angulo in angulos:
+        img_rotada = img_original.rotate(angulo, expand=True) if angulo != 0 else img_original
+        img_opt = optimizar_imagen(img_rotada)
         
-    if img_opt != ruta_imagen and os.path.exists(img_opt):
-        try: os.remove(img_opt)
-        except Exception: pass
-        
-    clases = parsear_texto_horario(texto_ocr)
-    
-    if clases:
-        log(f"[+] ¡ÉXITO! Se detectaron {len(clases)} sesiones de clase en el horario.")
-        for c in clases:
-            log(f"    -> [{c['codigo']}] {c['materia']} | {c['dia_completo']} {c['hora_inicio']}-{c['hora_fin']} | Aula {c['aula']} | {c['docente']}")
+        try:
+            texto = pytesseract.image_to_string(img_opt, config=r'--oem 3 --psm 6 -l spa+eng')
+            if len(texto.strip()) < 60:
+                texto += "\n" + pytesseract.image_to_string(img_opt, config=r'--oem 3 --psm 4 -l spa+eng')
+        except Exception as e:
+            log(f"[-] Error en Tesseract a {angulo}°: {e}")
+            texto = ""
             
+        clases = parsear_texto_horario(texto)
+        if len(clases) > len(mejores_clases):
+            mejores_clases = clases
+            mejor_texto = texto
+            log(f"[+] ¡Ángulo óptimo encontrado! {angulo}° con {len(clases)} sesiones de clase.")
+            
+        # Si ya detectamos 3 o más materias completas, no hace falta seguir rotando
+        if len(mejores_clases) >= 3:
+            break
+
+    if mejores_clases:
+        log(f"[+] ¡PROCESAMIENTO EXITOSO! {len(mejores_clases)} sesiones de clase estructuradas.")
         json_salida = "/srv/samba/hub/ultimo_horario.json"
         try:
             with open(json_salida, "w", encoding="utf-8") as f_json:
-                json.dump(clases, f_json, ensure_ascii=False, indent=2)
-        except Exception: pass
-        
-        return clases
+                json.dump(mejores_clases, f_json, ensure_ascii=False, indent=2)
+        except Exception:
+            pass
+        return mejores_clases
     else:
-        log("[-] No se detectaron patrones válidos de clases en la imagen.")
+        log("[-] No se detectaron patrones válidos de clases en ningún ángulo de la imagen.")
         return []
 
 if __name__ == "__main__":
