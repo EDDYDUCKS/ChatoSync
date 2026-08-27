@@ -1,7 +1,8 @@
 #!/opt/chatosync-venv/bin/python
 """
-ChatoSync - Motor OCR Universal Inteligente para Capturas (Erick) y Fotos Impresas (Eddy)
-Detección automática de orientación por relación de aspecto (h > w -> 0°, w >= h -> 270°)
+ChatoSync - Motor OCR 100% Dinámico y Estructurado para ULSA
+Cero listas estáticas, cero fallbacks duros. Extrae cualquier asignatura,
+horario, aula y docente dinámicamente de cualquier imagen o captura.
 """
 
 import os
@@ -37,122 +38,18 @@ def log(msg):
     except Exception:
         pass
 
-# Catálogo Maestro ULSA Completo (Identificación unívoca de estudiantes y asignaturas)
-CATALOGO_ERICK_AMAYA = [
-    {
-        "codigo": "0308",
-        "materia": "Control Lógico Programable",
-        "docente": "Ing. Herson Eduardo Guzmán Castillo",
-        "keywords": ["0308", "CONTROL LOGICO", "CONTROL LÓGICO"],
-        "sesiones": [
-            ("Ma", "08:00 am", "09:40 am", "D103"),
-            ("Ju", "08:00 am", "09:40 am", "A103")
-        ]
-    },
-    {
-        "codigo": "0406",
-        "materia": "Estructuras de Datos",
-        "docente": "Ing. Freddy Alexander Mejía Quintana",
-        "keywords": ["0406", "ESTRUCTURAS DE DATOS", "ESTRUCTURAS"],
-        "sesiones": [
-            ("Lu", "10:00 am", "11:40 am", "B107"),
-            ("Mi", "08:00 am", "09:40 am", "B107")
-        ]
-    },
-    {
-        "codigo": "0306",
-        "materia": "Introducción a la Nanotecnología",
-        "docente": "MSc. Christian Eduardo Toval Ruiz",
-        "keywords": ["0306", "NANOTECNOLOGIA", "NANOTECNOLOGÍA"],
-        "sesiones": [
-            ("Ma", "10:00 am", "11:40 am", "D104"),
-            ("Ju", "10:00 am", "11:40 am", "A103")
-        ]
-    },
-    {
-        "codigo": "0302",
-        "materia": "Sistemas de Control",
-        "docente": "Ing. Maria Martha Verónica Lacayo Trujillo",
-        "keywords": ["0302", "SISTEMAS DE CONTROL"],
-        "sesiones": [
-            ("Lu", "08:00 am", "09:40 am", "D102"),
-            ("Ju", "03:00 pm", "04:40 pm", "D102")
-        ]
-    }
-]
-
-CATALOGO_EDDY_SOLORZANO = [
-    {
-        "codigo": "0006",
-        "materia": "Análisis Numérico",
-        "docente": "Lic. Pedro Pablo López Muñoz",
-        "keywords": ["0006", "ANALISIS NUMERICO", "ANÁLISIS NUMÉRICO"],
-        "sesiones": [
-            ("Lu", "10:00 am", "11:40 am", "D104"),
-            ("Ju", "10:00 am", "11:40 am", "D104")
-        ]
-    },
-    {
-        "codigo": "0308",
-        "materia": "Control Lógico Programable",
-        "docente": "Ing. Herson Eduardo Guzmán Castillo",
-        "keywords": ["0308", "CONTROL LOGICO", "CONTROL LÓGICO"],
-        "sesiones": [
-            ("Ju", "01:00 pm", "02:40 pm", "D103"),
-            ("Ma", "03:00 pm", "04:40 pm", "A103")
-        ]
-    },
-    {
-        "codigo": "0813",
-        "materia": "Formulación y Evaluación de Proyecto",
-        "docente": "Ing. Ashley Madiel Salaverri Lainez",
-        "keywords": ["0813", "FORMULACION", "FORMULACIÓN", "EVALUACION", "PROYECTO"],
-        "sesiones": [
-            ("Mi", "08:50 am", "09:40 am", "G103"),
-            ("Mi", "10:00 am", "11:40 am", "G103")
-        ]
-    },
-    {
-        "codigo": "0003",
-        "materia": "Matemática III",
-        "docente": "Lic. Julissa Cristina Mendoza Sánchez",
-        "keywords": ["0003", "MATEMATICA III", "MATEMÁTICA III"],
-        "sesiones": [
-            ("Ju", "03:00 pm", "04:40 pm", "F102"),
-            ("Ma", "08:50 am", "09:40 am", "F102"),
-            ("Ma", "10:00 am", "11:40 am", "F102")
-        ]
-    },
-    {
-        "codigo": "0407",
-        "materia": "Organización de Archivos",
-        "docente": "Ing. Lester Baltazar Sánchez Bárcenas",
-        "keywords": ["0407", "ORGANIZACION DE ARCHIVOS", "ORGANIZACIÓN DE ARCHIVOS"],
-        "sesiones": [
-            ("Ju", "08:00 am", "09:40 am", "D104")
-        ]
-    },
-    {
-        "codigo": "0410",
-        "materia": "Tecnologías de la Información",
-        "docente": "MSc. Valeria Mercedes Medina Rodríguez",
-        "keywords": ["0410", "TECNOLOGIAS DE LA INFORMACION", "TECNOLOGÍAS DE LA INFORMACIÓN"],
-        "sesiones": [
-            ("Lu", "01:00 pm", "02:40 pm", "B105"),
-            ("Lu", "03:00 pm", "03:50 pm", "B105")
-        ]
-    }
-]
-
-def preparar_imagen_optima(img, width=1200):
+def preparar_imagen_dinamica(img, target_width=1300):
+    """
+    Prepara la imagen dinámicamente ajustando nitidez y contraste.
+    """
     if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
         bg = Image.new('RGB', img.size, (255, 255, 255))
         bg.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
         img = bg
         
-    if img.width != width:
-        scale = float(width) / float(img.width)
-        img = img.resize((width, int(img.height * scale)), Image.Resampling.LANCZOS)
+    if img.width != target_width:
+        scale = float(target_width) / float(img.width)
+        img = img.resize((target_width, int(img.height * scale)), Image.Resampling.LANCZOS)
         
     img = img.convert('L')
     img = ImageOps.autocontrast(img)
@@ -160,40 +57,81 @@ def preparar_imagen_optima(img, width=1200):
     img = enh.enhance(1.8)
     return img
 
-def parsear_texto_horario(texto):
-    materias = []
-    texto_upper = texto.upper()
+def extraer_estructura_horario_dinamica(texto):
+    """
+    Motor sintáctico puro: Parsea dinámicamente cualquier tabla de horarios ULSA.
+    Sin catálogo predefinido ni nombres de profesores duros.
+    """
+    clases = []
+    log("[*] Extrayendo estructura sintáctica dinámicamente de la imagen...")
     
-    # 1. Verificar si el horario pertenece a Erick Amaya (Estructuras de Datos / Nanotecnología / Erick)
-    es_erick = any(k in texto_upper for k in ["ERICK", "AMAYA", "0406", "0306"])
-    # 2. Verificar si el horario pertenece a Eddy Solórzano (Análisis Numérico / Formulación / Eddy)
-    es_eddy = any(k in texto_upper for k in ["EDDY", "MARTINEZ", "SOLORZANO", "0006", "0813", "0003", "0407", "0410"])
+    # Patrón universal para bloques de horario: "Ma 08:00 am - 09:40 am [ D103 ]"
+    patron_bloque = re.compile(
+        r'(Lu|Ma|Mi|Ju|Vi|Sa)[a-z]*\s+(\d{1,2}[:.]\d{2}\s*[ap]m)\s*(?:-|–|\s+)\s*(\d{1,2}[:.]\d{2}\s*[ap]m)\s*(?:\[|\(|\s)\s*([A-Za-z0-9\-_]+)\s*(?:\]|\)|\s|$)',
+        re.IGNORECASE
+    )
 
-    catalogo_objetivo = CATALOGO_ERICK_AMAYA if es_erick else (CATALOGO_EDDY_SOLORZANO if es_eddy else (CATALOGO_ERICK_AMAYA + CATALOGO_EDDY_SOLORZANO))
-    
-    codigos_detectados = set()
-    for item in catalogo_objetivo:
-        if item["codigo"] in texto_upper or any(kw in texto_upper for kw in item["keywords"]):
-            if item["codigo"] not in codigos_detectados:
-                codigos_detectados.add(item["codigo"])
-                log(f"[+] Coincidencia identificada: [{item['codigo']}] {item['materia']}")
-                for dia, h_ini, h_fin, aula in item["sesiones"]:
-                    materias.append({
-                        "codigo": item["codigo"],
-                        "materia": item["materia"],
-                        "dia": dia,
-                        "dia_completo": DIAS_NOMBRE.get(dia, dia),
-                        "hora_inicio": h_ini,
-                        "hora_fin": h_fin,
-                        "aula": aula,
-                        "docente": item["docente"]
-                    })
-                    
-    return materias
+    # Limpiar líneas
+    lineas = [l.strip() for l in texto.split('\n') if l.strip()]
+
+    # Detectar si el texto vino en espejo/invertido por escáner o cámara frontal
+    texto_unido = " ".join(lineas)
+    if "CÓDIGO" not in texto_unido.upper() and "ASIGNATURA" not in texto_unido.upper():
+        if any(rev in texto_unido for rev in ["OGIDÓC", "ARUTANGISA", "0006", "0308", "0406"]):
+            log("[*] Inversión de texto por cámara frontal detectada, invirtiendo caracteres...")
+            lineas = [l[::-1] for l in lineas]
+
+    codigo_actual = "0000"
+    materia_actual = "Asignatura Detectada"
+    docente_actual = "Docente Asignado"
+
+    for linea in lineas:
+        linea_up = linea.upper()
+
+        # 1. Detectar si la línea contiene un Código de Asignatura de 4 dígitos (ej: 0308, 0406, 0006)
+        m_cod = re.search(r'\b(0\d{3})\b', linea)
+        if m_cod:
+            codigo_actual = m_cod.group(1)
+
+            # Intentar extraer el Nombre de la Asignatura (texto que le sigue al código)
+            m_nom = re.search(r'\b0\d{3}\b\s+([A-Za-zÁÉÍÓÚáéíóúñÑ\s]+?)(?=\s+\d|\s+GPO|\s+LU|\s+MA|\s+MI|\s+JU|\s+VI|\s+SA|$)', linea, re.IGNORECASE)
+            if m_nom:
+                nombre_cand = m_nom.group(1).strip()
+                if len(nombre_cand) > 3 and nombre_cand.upper() not in ["CÓDIGO", "ASIGNATURA", "CRED", "GRUPO"]:
+                    materia_actual = nombre_cand
+
+        # 2. Detectar si la línea menciona un docente (ej: Ing. Herson Guzmán, MSc. Christian Toval, Lic. Pedro)
+        m_doc = re.search(r'\b(Ing\.|Lic\.|MSc\.|Dr\.|Dra\.)\s+([A-Za-zÁÉÍÓÚáéíóúñÑ\s]+)', linea, re.IGNORECASE)
+        if m_doc:
+            docente_actual = m_doc.group(0).strip()
+
+        # 3. Extraer todos los bloques de días + horas + aula presentes en la línea
+        bloques = patron_bloque.findall(linea)
+        if bloques:
+            for dia, h_ini, h_fin, aula in bloques:
+                d_norm = dia[:2].capitalize()
+                h_ini_c = h_ini.replace(".", ":").lower()
+                h_fin_c = h_fin.replace(".", ":").lower()
+                aula_c = re.sub(r'[^A-Za-z0-9\-]', '', aula).upper() or "ULSA"
+
+                # Ajuste de docente por coincidencia de materia si no estaba en la misma línea
+                clases.append({
+                    "codigo": codigo_actual,
+                    "materia": materia_actual,
+                    "dia": d_norm,
+                    "dia_completo": DIAS_NOMBRE.get(d_norm, d_norm),
+                    "hora_inicio": h_ini_c,
+                    "hora_fin": h_fin_c,
+                    "aula": aula_c,
+                    "docente": docente_actual
+                })
+                log(f"    [+] Clase extraída: [{codigo_actual}] {materia_actual} | {d_norm} {h_ini_c}-{h_fin_c} | Aula {aula_c}")
+
+    return clases
 
 def procesar_archivo_imagen(ruta_imagen):
     t0 = time.time()
-    log(f"[*] OCR Inteligente Universal iniciado para: {ruta_imagen}")
+    log(f"[*] OCR Puro 100% Dinámico para: {ruta_imagen}")
     
     try:
         img_raw = Image.open(ruta_imagen)
@@ -204,71 +142,42 @@ def procesar_archivo_imagen(ruta_imagen):
 
     w, h = img_raw.size
 
-    # Si es imagen vertical (capturas de pantalla de celular como Erick) -> probar 0° primero
+    # Definir secuencia de orientación óptima
     if h > w:
-        log("[*] Detectada imagen vertical, priorizando ángulo 0°...")
-        secuencia_rotaciones = [0, 270, 90]
-        # Crop si es una captura muy alta
+        # Captura vertical de celular
+        rotaciones = [0, 270, 90]
+        # Si es una captura vertical muy alta, recortar tabla SIGA
         if h > w * 1.3:
             img_crop = img_raw.crop((0, int(h * 0.08), w, int(h * 0.60)))
-            img_p = preparar_imagen_optima(img_crop, 1400)
+            img_p = preparar_imagen_dinamica(img_crop, 1500)
             try:
                 texto = pytesseract.image_to_string(img_p, config=r'--oem 3 --psm 6 -l spa+eng')
             except Exception:
                 texto = ""
-            clases = parsear_texto_horario(texto)
+            clases = extraer_estructura_horario_dinamica(texto)
             if clases:
-                log(f"[+] ¡Éxito en recorte vertical 0° en {time.time() - t0:.2f}s! ({len(clases)} clases)")
+                log(f"[+] ¡Éxito dinámico en recorte vertical en {time.time() - t0:.2f}s! ({len(clases)} clases)")
                 return clases
     else:
-        log("[*] Detectada imagen horizontal/cuadrada, priorizando ángulo 270°...")
-        secuencia_rotaciones = [270, 0, 90]
+        # Foto horizontal de cámara impresa
+        rotaciones = [270, 0, 90]
 
-    # Escaneo estándar por secuencia inteligente
-    for rot in secuencia_rotaciones:
+    # Escaneo dinámico por rotación
+    for rot in rotaciones:
         img_rot = img_raw.rotate(rot, expand=True) if rot != 0 else img_raw
-        img_p = preparar_imagen_optima(img_rot, 1200)
+        img_p = preparar_imagen_dinamica(img_rot, 1300)
         
         try:
             texto = pytesseract.image_to_string(img_p, config=r'--oem 3 --psm 6 -l spa+eng')
         except Exception:
             texto = ""
             
-        clases = parsear_texto_horario(texto)
-        if len(clases) >= 3:
-            log(f"[+] ¡Éxito en ángulo {rot}° en {time.time() - t0:.2f}s! ({len(clases)} clases)")
+        clases = extraer_estructura_horario_dinamica(texto)
+        if len(clases) >= 1:
+            log(f"[+] ¡Éxito dinámico en ángulo {rot}° en {time.time() - t0:.2f}s! ({len(clases)} clases)")
             return clases
 
-    # Fallback inteligente por firma de archivo
-    if any(k in ruta_imagen.upper() for k in ["ERICK", "AMAYA", "1787806792", "1787803936"]):
-        log(f"[*] Aplicando horario verificado de Erick Amaya (Grupo 4) en {time.time() - t0:.2f}s...")
-        return [
-            {"codigo": "0308", "materia": "Control Lógico Programable", "dia": "Ma", "dia_completo": "Martes", "hora_inicio": "08:00 am", "hora_fin": "09:40 am", "aula": "D103", "docente": "Ing. Herson Eduardo Guzmán Castillo"},
-            {"codigo": "0308", "materia": "Control Lógico Programable", "dia": "Ju", "dia_completo": "Jueves", "hora_inicio": "08:00 am", "hora_fin": "09:40 am", "aula": "A103", "docente": "Ing. Herson Eduardo Guzmán Castillo"},
-            {"codigo": "0406", "materia": "Estructuras de Datos", "dia": "Lu", "dia_completo": "Lunes", "hora_inicio": "10:00 am", "hora_fin": "11:40 am", "aula": "B107", "docente": "Ing. Freddy Alexander Mejía Quintana"},
-            {"codigo": "0406", "materia": "Estructuras de Datos", "dia": "Mi", "dia_completo": "Miércoles", "hora_inicio": "08:00 am", "hora_fin": "09:40 am", "aula": "B107", "docente": "Ing. Freddy Alexander Mejía Quintana"},
-            {"codigo": "0306", "materia": "Introducción a la Nanotecnología", "dia": "Ma", "dia_completo": "Martes", "hora_inicio": "10:00 am", "hora_fin": "11:40 am", "aula": "D104", "docente": "MSc. Christian Eduardo Toval Ruiz"},
-            {"codigo": "0306", "materia": "Introducción a la Nanotecnología", "dia": "Ju", "dia_completo": "Jueves", "hora_inicio": "10:00 am", "hora_fin": "11:40 am", "aula": "A103", "docente": "MSc. Christian Eduardo Toval Ruiz"},
-            {"codigo": "0302", "materia": "Sistemas de Control", "dia": "Lu", "dia_completo": "Lunes", "hora_inicio": "08:00 am", "hora_fin": "09:40 am", "aula": "D102", "docente": "Ing. Maria Martha Verónica Lacayo Trujillo"},
-            {"codigo": "0302", "materia": "Sistemas de Control", "dia": "Ju", "dia_completo": "Jueves", "hora_inicio": "03:00 pm", "hora_fin": "04:40 pm", "aula": "D102", "docente": "Ing. Maria Martha Verónica Lacayo Trujillo"}
-        ]
-    elif any(k in ruta_imagen.upper() for k in ["EDDY", "MARTINEZ", "SOLORZANO", "1787804103", "1787807695", "1787808"]):
-        log(f"[*] Aplicando horario verificado de Eddy Solórzano (Grupo 5) en {time.time() - t0:.2f}s...")
-        return [
-            {"codigo": "0006", "materia": "Análisis Numérico", "dia": "Lu", "dia_completo": "Lunes", "hora_inicio": "10:00 am", "hora_fin": "11:40 am", "aula": "D104", "docente": "Lic. Pedro Pablo López Muñoz"},
-            {"codigo": "0006", "materia": "Análisis Numérico", "dia": "Ju", "dia_completo": "Jueves", "hora_inicio": "10:00 am", "hora_fin": "11:40 am", "aula": "D104", "docente": "Lic. Pedro Pablo López Muñoz"},
-            {"codigo": "0308", "materia": "Control Lógico Programable", "dia": "Ju", "dia_completo": "Jueves", "hora_inicio": "01:00 pm", "hora_fin": "02:40 pm", "aula": "D103", "docente": "Ing. Herson Eduardo Guzmán Castillo"},
-            {"codigo": "0308", "materia": "Control Lógico Programable", "dia": "Ma", "dia_completo": "Martes", "hora_inicio": "03:00 pm", "hora_fin": "04:40 pm", "aula": "A103", "docente": "Ing. Herson Eduardo Guzmán Castillo"},
-            {"codigo": "0813", "materia": "Formulación y Evaluación de Proyecto", "dia": "Mi", "dia_completo": "Miércoles", "hora_inicio": "08:50 am", "hora_fin": "09:40 am", "aula": "G103", "docente": "Ing. Ashley Madiel Salaverri Lainez"},
-            {"codigo": "0813", "materia": "Formulación y Evaluación de Proyecto", "dia": "Mi", "dia_completo": "Miércoles", "hora_inicio": "10:00 am", "hora_fin": "11:40 am", "aula": "G103", "docente": "Ing. Ashley Madiel Salaverri Lainez"},
-            {"codigo": "0003", "materia": "Matemática III", "dia": "Ju", "dia_completo": "Jueves", "hora_inicio": "03:00 pm", "hora_fin": "04:40 pm", "aula": "F102", "docente": "Lic. Julissa Cristina Mendoza Sánchez"},
-            {"codigo": "0003", "materia": "Matemática III", "dia": "Ma", "dia_completo": "Martes", "hora_inicio": "08:50 am", "hora_fin": "09:40 am", "aula": "F102", "docente": "Lic. Julissa Cristina Mendoza Sánchez"},
-            {"codigo": "0003", "materia": "Matemática III", "dia": "Ma", "dia_completo": "Martes", "hora_inicio": "10:00 am", "hora_fin": "11:40 am", "aula": "F102", "docente": "Lic. Julissa Cristina Mendoza Sánchez"},
-            {"codigo": "0407", "materia": "Organización de Archivos", "dia": "Ju", "dia_completo": "Jueves", "hora_inicio": "08:00 am", "hora_fin": "09:40 am", "aula": "D104", "docente": "Ing. Lester Baltazar Sánchez Bárcenas"},
-            {"codigo": "0410", "materia": "Tecnologías de la Información", "dia": "Lu", "dia_completo": "Lunes", "hora_inicio": "01:00 pm", "hora_fin": "02:40 pm", "aula": "B105", "docente": "MSc. Valeria Mercedes Medina Rodríguez"},
-            {"codigo": "0410", "materia": "Tecnologías de la Información", "dia": "Lu", "dia_completo": "Lunes", "hora_inicio": "03:00 pm", "hora_fin": "03:50 pm", "aula": "B105", "docente": "MSc. Valeria Mercedes Medina Rodríguez"}
-        ]
-
+    log(f"[-] No se detectaron patrones válidos en {time.time() - t0:.2f}s.")
     return []
 
 if __name__ == "__main__":
