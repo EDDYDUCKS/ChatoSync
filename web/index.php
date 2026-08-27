@@ -1,8 +1,9 @@
 <?php
 // ─── Datos del Hub (PHP renderizado en carga inicial) ───────────────────────
 $hubDir = "/srv/samba/hub/";
-$SYSTEM_FILES = ['ultimo_horario.json','horario_ulsa.ics','procesar_horario.py','chatosync.service'];
-$SYSTEM_EXTS  = ['py','sh','json','ics','log','conf','service'];
+$SYSTEM_FILES = ['ultimo_horario.json','horario_ulsa.ics','procesar_horario.py','chatosync.service','index.php','api.php','transfer.php','download.php'];
+$SYSTEM_EXTS  = ['php','py','sh','json','ics','log','conf','service','bak'];
+
 
 $hubFiles = [];
 if (is_dir($hubDir)) {

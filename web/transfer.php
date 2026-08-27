@@ -46,8 +46,9 @@ if (isset($_GET['del'])) {
 }
 
 // Archivos del sistema que NO deben mostrarse al público
-$SYSTEM_FILES = ['ultimo_horario.json','horario_ulsa.ics','procesar_horario.py','chatosync.service'];
-$SYSTEM_EXTS  = ['py','sh','json','ics','log','conf','service'];
+$SYSTEM_FILES = ['ultimo_horario.json','horario_ulsa.ics','procesar_horario.py','chatosync.service','index.php','api.php','transfer.php','download.php'];
+$SYSTEM_EXTS  = ['php','py','sh','json','ics','log','conf','service','bak'];
+
 
 $files = [];
 if (is_dir($uploadDir)) {
