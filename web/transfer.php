@@ -289,29 +289,68 @@ function doUpload(){
 }
 
 // ── Theme Toggle ──────────────────────────────────────────────────────────────
-function applyTheme(t){
-    document.documentElement.setAttribute('data-theme', t);
-    const icon = document.getElementById('themeIcon');
-    const label = document.getElementById('themeLabel');
-    if(t==='light'){
-        icon.className='fa-solid fa-moon';
-        label.textContent='Oscuro';
+function sweepInlineColors(isLight) {
+    const colorPatches = [
+        {match:'color:#555',light:'#444'},{match:'color:#666',light:'#555'},
+        {match:'color:#888',light:'#444'},{match:'color:#aaa',light:'#666'},
+        {match:'color:#e5e5e5',light:'#111'},
+    ];
+    const bgPatches = [
+        {match:'background:#0d0d0d',light:'#f5f5f5'},
+        {match:'background:#0a0a0a',light:'#f5f5f5'},
+        {match:'background:#111111',light:'#ffffff'},
+        {match:'background:#111;',  light:'#ffffff'},
+        {match:'background:#1a1a1a',light:'#f0f0f0'},
+    ];
+    if (isLight) {
+        colorPatches.forEach(({match,light})=>{
+            document.querySelectorAll(`[style*="${match}"]`).forEach(el=>{
+                if(!el.dataset.origStyle) el.dataset.origStyle=el.getAttribute('style')||'';
+                el.style.color=light;
+            });
+        });
+        bgPatches.forEach(({match,light})=>{
+            document.querySelectorAll(`[style*="${match}"]`).forEach(el=>{
+                if(!el.dataset.origStyle) el.dataset.origStyle=el.getAttribute('style')||'';
+                el.style.background=light;
+            });
+        });
     } else {
-        icon.className='fa-solid fa-sun';
-        label.textContent='Claro';
+        document.querySelectorAll('[data-orig-style]').forEach(el=>{
+            el.setAttribute('style', el.dataset.origStyle||'');
+            delete el.dataset.origStyle;
+        });
+    }
+}
+
+function applyTheme(t){
+    const isLight = t==='light';
+    document.documentElement.setAttribute('data-theme', t);
+    sweepInlineColors(isLight);
+
+    // Fix header hardcoded bg
+    const header = document.querySelector('header');
+    if(header){
+        header.style.background = isLight ? '#ffffff' : '#0a0a0a';
+        header.style.borderColor= isLight ? '#e0e0e0' : 'var(--border)';
+    }
+
+    // Update toggle button
+    const icon = document.getElementById('themeIcon');
+    const label= document.getElementById('themeLabel');
+    if(icon && label){
+        icon.className   = isLight ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+        label.textContent= isLight ? 'Oscuro' : 'Claro';
     }
 }
 function toggleTheme(){
-    const cur = document.documentElement.getAttribute('data-theme')||'dark';
+    const cur  = document.documentElement.getAttribute('data-theme')||'dark';
     const next = cur==='light'?'dark':'light';
     localStorage.setItem('chatosync-theme', next);
     applyTheme(next);
 }
 // Cargar preferencia guardada
-(function(){
-    const saved = localStorage.getItem('chatosync-theme')||'dark';
-    applyTheme(saved);
-})();
+(function(){ applyTheme(localStorage.getItem('chatosync-theme')||'dark'); })();
 </script>
 </body>
 </html>

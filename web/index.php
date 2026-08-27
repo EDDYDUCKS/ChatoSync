@@ -90,7 +90,56 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 /* Progress ring */
 .ring-track{fill:none;stroke:#222;stroke-width:4;}
 .ring-fill{fill:none;stroke:var(--red);stroke-width:4;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50%;transition:stroke-dashoffset .6s ease;}
+
+/* ══════════════════════════════════════════════════
+   LIGHT THEME — overrides Tailwind & hardcoded CSS
+══════════════════════════════════════════════════ */
+/* Tailwind text-white y slate → dark text en light mode */
+[data-theme="light"] .text-white { color: #111111 !important; }
+[data-theme="light"] .text-slate-100,
+[data-theme="light"] .text-slate-200,
+[data-theme="light"] .text-slate-300 { color: #333333 !important; }
+[data-theme="light"] .text-slate-400 { color: #666666 !important; }
+[data-theme="light"] .text-slate-500 { color: #777777 !important; }
+
+/* Structural backgrounds */
+[data-theme="light"] aside,
+[data-theme="light"] #sidebar { background: #ffffff !important; border-color: #e0e0e0 !important; }
+[data-theme="light"] header  { background: #ffffff !important; border-color: #e0e0e0 !important; }
+
+/* Cards: var(--card) ya los cubre, pero dividers no */
+[data-theme="light"] .divide-y > * { border-color: #e5e5e5 !important; }
+
+/* Tablas */
+[data-theme="light"] thead tr { background: #f0f0f0 !important; }
+[data-theme="light"] thead th { color: #555555 !important; border-color: #e5e5e5 !important; }
+
+/* Log / consola */
+[data-theme="light"] pre { background: #f0f0f0 !important; color: #222222 !important; border-color: #ddd !important; }
+
+/* Sidebar nav buttons */
+[data-theme="light"] .sidebar-btn { color: #444444 !important; }
+[data-theme="light"] .sidebar-btn i { color: #999999 !important; }
+
+/* Inputs y textareas */
+[data-theme="light"] input,
+[data-theme="light"] textarea { background: #f0f0f0 !important; border-color: #d0d0d0 !important; color: #111 !important; }
+
+/* Drop zones OCR */
+[data-theme="light"] #dropZoneOCR,
+[data-theme="light"] #dropZoneOCR2 { border-color: #cccccc !important; }
+
+/* KPI numbers — sin glow en claro */
+[data-theme="light"] .kpi-red { text-shadow: none !important; color: #dc2626 !important; }
+
+/* Tooltip */
+[data-theme="light"] [data-tip]:hover::after { background: #fff; color: #111; border-color: #ddd; }
+
+/* Scrollbar en tema claro */
+[data-theme="light"] ::-webkit-scrollbar-track { background: #f0f0f0; }
+[data-theme="light"] ::-webkit-scrollbar-thumb { background: #ccc; }
 </style>
+
 </head>
 <body>
 
@@ -901,27 +950,125 @@ setInterval(refreshStatus,10000);
 setInterval(refreshLogs,5000);
 
 // ── Theme Toggle ──────────────────────────────────────────────────────────────
-function applyTheme(t){
-    document.documentElement.setAttribute('data-theme', t);
-    const icon  = document.getElementById('themeIcon');
-    const label = document.getElementById('themeLabel');
-    if(!icon||!label) return;
-    if(t==='light'){
-        icon.className='fa-solid fa-moon';
-        label.textContent='Oscuro';
+
+/**
+ * Guarda el style inline original en data-orig-style y aplica nuevo valor.
+ * Permite restaurar el original al volver a dark.
+ */
+function patchInlineStyle(el, prop, lightVal, darkVal, isLight) {
+    if (!el) return;
+    if (isLight) {
+        if (!el.dataset.origStyle) el.dataset.origStyle = el.getAttribute('style') || '';
+        el.style[prop] = lightVal;
     } else {
-        icon.className='fa-solid fa-sun';
-        label.textContent='Claro';
+        // Restaurar original si existe; de lo contrario aplicar darkVal
+        if (el.dataset.origStyle !== undefined) {
+            el.setAttribute('style', el.dataset.origStyle);
+            delete el.dataset.origStyle;
+        } else {
+            el.style[prop] = darkVal;
+        }
     }
 }
+
+/**
+ * Barre todos los elementos con un valor de color hardcodeado en style="" y los parchea.
+ * Usa data-orig-style para poder restaurar al volver a dark.
+ */
+function sweepInlineColors(isLight) {
+    // Mapeo: fragmento del inline style → valor claro
+    const colorPatches = [
+        { match: 'color:#555',    light: '#444' },
+        { match: 'color:#555555', light: '#444' },
+        { match: 'color:#666',    light: '#555' },
+        { match: 'color:#666666', light: '#555' },
+        { match: 'color:#888',    light: '#444' },
+        { match: 'color:#888888', light: '#444' },
+        { match: 'color:#aaa',    light: '#666' },
+        { match: 'color:#aaaaaa', light: '#666' },
+        { match: 'color:#e5e5e5', light: '#111' },  // body text blanco casi
+    ];
+    const bgPatches = [
+        { match: 'background:#0d0d0d', light: '#f5f5f5' },
+        { match: 'background:#0a0a0a', light: '#f5f5f5' },
+        { match: 'background:#111111', light: '#ffffff' },
+        { match: 'background:#111;',   light: '#ffffff' },
+        { match: 'background:#1a1a1a', light: '#f0f0f0' },
+        { match: 'background:#141414', light: '#f5f5f5' },
+    ];
+
+    if (isLight) {
+        // Color patches
+        colorPatches.forEach(({match, light}) => {
+            document.querySelectorAll(`[style*="${match}"]`).forEach(el => {
+                if (!el.dataset.origStyle) el.dataset.origStyle = el.getAttribute('style') || '';
+                el.style.color = light;
+            });
+        });
+        // Background patches
+        bgPatches.forEach(({match, light}) => {
+            document.querySelectorAll(`[style*="${match}"]`).forEach(el => {
+                if (!el.dataset.origStyle) el.dataset.origStyle = el.getAttribute('style') || '';
+                el.style.background = light;
+            });
+        });
+    } else {
+        // Restaurar todos los estilos guardados
+        document.querySelectorAll('[data-orig-style]').forEach(el => {
+            el.setAttribute('style', el.dataset.origStyle || '');
+            delete el.dataset.origStyle;
+        });
+    }
+}
+
+function applyTheme(t) {
+    const isLight = t === 'light';
+    document.documentElement.setAttribute('data-theme', t);
+
+    // ① Barrer elementos con colores hardcodeados en style=""
+    sweepInlineColors(isLight);
+
+    // ② Forzar sidebar y header (tienen inline bg que CSS !important ya cubre,
+    //    pero el sweep es un doble seguro)
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar) {
+        sidebar.style.background = isLight ? '#ffffff' : '#0d0d0d';
+        sidebar.style.borderColor = isLight ? '#e0e0e0' : 'var(--border)';
+    }
+    const header = document.querySelector('header');
+    if (header) {
+        header.style.background = isLight ? '#ffffff' : '#0a0a0a';
+        header.style.borderColor = isLight ? '#e0e0e0' : 'var(--border)';
+    }
+
+    // ③ Log viewers (pre con color hardcodeado)
+    ['logViewer','logViewerFull'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.style.background = isLight ? '#f0f0f0' : '';
+            el.style.color      = isLight ? '#222'    : '#888';
+            el.style.borderColor= isLight ? '#ddd'    : '';
+        }
+    });
+
+    // ④ Actualizar botón de toggle
+    const icon  = document.getElementById('themeIcon');
+    const label = document.getElementById('themeLabel');
+    if (icon && label) {
+        icon.className   = isLight ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+        label.textContent= isLight ? 'Oscuro' : 'Claro';
+    }
+}
+
 function toggleTheme(){
-    const cur  = document.documentElement.getAttribute('data-theme')||'dark';
-    const next = cur==='light'?'dark':'light';
+    const cur  = document.documentElement.getAttribute('data-theme') || 'dark';
+    const next = cur === 'light' ? 'dark' : 'light';
     localStorage.setItem('chatosync-theme', next);
     applyTheme(next);
 }
-// Aplicar tema guardado al cargar
-(function(){ applyTheme(localStorage.getItem('chatosync-theme')||'dark'); })();
+
+// Aplicar tema guardado al cargar (después de que el DOM está listo)
+(function(){ applyTheme(localStorage.getItem('chatosync-theme') || 'dark'); })();
 </script>
 </body>
 </html>
