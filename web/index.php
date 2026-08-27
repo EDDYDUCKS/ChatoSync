@@ -1073,9 +1073,12 @@ function processOCRFile(file) {
         .catch(() => {
             if(loader) loader.classList.add('hidden');
             if(prompt) prompt.classList.remove('hidden');
+            alert('Error al comunicarse con el servidor OCR.');
+        });
 }
 
 // ─── Transfer Drag & Drop ────────────────────────────────────────────────────
+
 
 function handleTransferFile(inp) {
     if(!inp.files.length) return;
