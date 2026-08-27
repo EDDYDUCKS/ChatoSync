@@ -105,28 +105,34 @@ if ($action === 'upload') {
             $scriptPath = "/var/www/html/procesar_horario.py";
         }
 
-        // Separar stdout (JSON) de stderr (logs) correctamente
-        $jsonPath = "/tmp/ocr_json_" . time() . ".json";
+        // Usar 2>&1 y markers únicos para separar JSON de logs sin depender de redirecciones
         $cmd = "/opt/chatosync-venv/bin/python " . escapeshellarg($scriptPath)
-             . " --file " . escapeshellarg($tempPath)
-             . " > " . escapeshellarg($jsonPath) . " 2>/tmp/ocr_debug.txt";
-        shell_exec($cmd);
-
-        $raw_json = trim(file_exists($jsonPath) ? file_get_contents($jsonPath) : '');
-        $raw_log  = trim(file_exists('/tmp/ocr_debug.txt') ? file_get_contents('/tmp/ocr_debug.txt') : '');
+             . " --file " . escapeshellarg($tempPath) . " 2>&1";
+        $raw = trim(shell_exec($cmd) ?: '');
 
         @unlink($tempPath);
-        @unlink($jsonPath);
 
-        $clases = json_decode($raw_json, true);
-        if (!is_array($clases)) $clases = [];
+        // Extraer JSON entre markers <<<JSON>>> ... <<<END>>>
+        $clases = [];
+        if (preg_match('/<<<JSON>>>(.*?)<<<END>>>/s', $raw, $m)) {
+            $clases = json_decode(trim($m[1]), true) ?: [];
+        }
+        // Fallback: buscar el último array JSON en el output
+        if (empty($clases)) {
+            $pos = strrpos($raw, '[');
+            if ($pos !== false) {
+                $json_candidate = substr($raw, $pos);
+                $decoded = json_decode($json_candidate, true);
+                if (is_array($decoded)) $clases = $decoded;
+            }
+        }
 
         echo json_encode([
             'status'  => 'ok',
             'message' => 'Horario procesado exitosamente.',
             'count'   => count($clases),
             'clases'  => $clases,
-            'debug'   => substr($raw_log, -800)   // últimas líneas del log
+            'debug'   => substr($raw, -600)
         ], JSON_UNESCAPED_UNICODE);
         exit;
     } else {

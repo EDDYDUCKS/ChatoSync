@@ -182,9 +182,13 @@ if __name__ == "__main__":
     if len(sys.argv) > 2 and sys.argv[1] == "--file":
         path = sys.argv[2]
         if os.path.exists(path):
-            print(json.dumps(procesar_archivo_imagen(path), ensure_ascii=False))
+            result = procesar_archivo_imagen(path)
         else:
-            print(json.dumps({"error": "Archivo no encontrado"}))
+            result = []
+        # Markers únicos para que PHP extraiga el JSON con 100% de fiabilidad
+        print("<<<JSON>>>")
+        print(json.dumps(result, ensure_ascii=False))
+        print("<<<END>>>")
     else:
         log("[*] Daemon ChatoSync activo...")
         os.makedirs(SAMBA_ENTRADA, exist_ok=True)
