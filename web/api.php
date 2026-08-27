@@ -97,9 +97,10 @@ if ($action === 'upload') {
     
     if (move_uploaded_file($tmpName, $tempPath)) {
         @chmod($tempPath, 0777);
-        // Ejecutar procesamiento con Python
-        $cmd = "/opt/chatosync-venv/bin/python /srv/samba/hub/procesar_horario.py --file " . escapeshellarg($tempPath);
+        // Ejecutar procesamiento con Python (capturando stderr)
+        $cmd = "/opt/chatosync-venv/bin/python /srv/samba/hub/procesar_horario.py --file " . escapeshellarg($tempPath) . " 2>&1";
         $out = shell_exec($cmd);
+
         
         // AUTO-LIMPIEZA INMEDIATA: Borrar la foto del disco para no ocupar memoria ni almacenamiento
         if (file_exists($tempPath)) {
@@ -145,8 +146,9 @@ if ($action === 'test_sample') {
     $tempDest = "/tmp/sample_ocr_" . time() . ".png";
     @copy($sampleFile, $tempDest);
     
-    $cmd = "/opt/chatosync-venv/bin/python /srv/samba/hub/procesar_horario.py --file " . escapeshellarg($tempDest);
+    $cmd = "/opt/chatosync-venv/bin/python /srv/samba/hub/procesar_horario.py --file " . escapeshellarg($tempDest) . " 2>&1";
     $out = shell_exec($cmd);
+
     
     if (file_exists($tempDest)) { @unlink($tempDest); }
     
