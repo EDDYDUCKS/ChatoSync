@@ -73,27 +73,50 @@ def mejorar_imagen_optima(img, width=1500):
     img = enh.enhance(1.7)
     return img
 
-def normalizar_codigo_ocr(texto_raw):
-    """Limpia errores comunes de OCR en códigos de 4 dígitos (ej: O308 -> 0308)."""
-    t = texto_raw.replace('O', '0').replace('o', '0').replace('I', '1').replace('l', '1').replace('S', '5')
-    m = re.search(r'\b(0\d{3})\b', t)
+def normalizar_codigo_ocr(linea_raw):
+    """
+    Detecta códigos de asignatura de 4 dígitos (ej: 0308, 0006).
+    EXCLUYE patrones de hora como 08:50, 10:00, 03:00 que el OCR a veces
+    confunde con códigos de materia.
+    """
+    # Eliminar fragmentos de hora primero para evitar falsos positivos
+    linea_limpia = re.sub(r'\d{1,2}[:.]\d{2}\s*[ap]m', '', linea_raw, flags=re.IGNORECASE)
+    # Corregir errores OCR comunes en códigos
+    t = linea_limpia.replace('O', '0').replace('I', '1').replace('l', '1')
+    # Solo buscar código si viene al inicio o aislado (no dentro de otras palabras)
+    m = re.search(r'(?<![:/\d])\b(0[0-9]{3})\b(?![:/\d])', t)
     return m.group(1) if m else None
+
+def normalizar_aula_ocr(aula_raw):
+    """
+    Corrige errores OCR comunes en nombres de aulas.
+    El OCR confunde frecuentemente 'B' con '8' al inicio de aulas.
+    Ej: '8105' -> 'B105', '8107' -> 'B107'
+    """
+    aula = re.sub(r'[^A-Za-z0-9\-]', '', aula_raw).upper()
+    # Si comienza con dígito seguido de 3 dígitos y el primer dígito es 8, probablemente es B
+    if re.match(r'^8\d{3}$', aula):
+        aula = 'B' + aula[1:]
+    # F102 a veces se lee como F1O2
+    aula = aula.replace('O', '0')
+    return aula or "ULSA"
 
 def parsear_sesiones_texto(texto):
     """
     Extrae dinámicamente las sesiones de clase presentes en un bloque de texto.
-    Patrón: Día + Hora Inicio + Hora Fin + Aula
+    Patrón: Día + Hora Inicio + (Hora Fin opcional) + Aula
     """
     sesiones = []
+    # Patrón completo con hora fin
     patron = re.compile(
-        r'(Lu|Ma|Mi|Ju|Vi|Sa)[a-z]*\s+(\d{1,2}[:.]\d{2}\s*[ap]m)\s*(?:-|–|\s+)\s*(\d{1,2}[:.]\d{2}\s*[ap]m)\s*(?:\[|\(|\s)*([A-Za-z0-9\-_]+)',
+        r'(Lu|Ma|Mi|Ju|Vi|Sa)[a-z]*\s+(\d{1,2}[:.]\d{2}\s*[ap]m)\s*(?:-|–)\s*(\d{1,2}[:.]\d{2}\s*[ap]m)\s*(?:\[|\(|\s)*([A-Za-z0-9\-_]+)',
         re.IGNORECASE
     )
     for dia, h_ini, h_fin, aula in patron.findall(texto):
         d_norm = dia[:2].capitalize()
         h_ini_c = h_ini.replace(".", ":").lower()
         h_fin_c = h_fin.replace(".", ":").lower()
-        aula_c = re.sub(r'[^A-Za-z0-9\-]', '', aula).upper() or "ULSA"
+        aula_c = normalizar_aula_ocr(aula)
         sesiones.append((d_norm, h_ini_c, h_fin_c, aula_c))
     return sesiones
 
