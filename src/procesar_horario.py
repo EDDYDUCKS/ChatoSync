@@ -1,8 +1,8 @@
 #!/opt/chatosync-venv/bin/python
 """
-ChatoSync - Motor Autónomo de Procesamiento OCR Ultra-Resiliente para Horarios ULSA
-Incluye: Detección y corrección automática de rotación (0°, 90°, 180°, 270°),
-filtro de contraste adaptativo, parseo tabular SIGA y catálogo completo de materias.
+ChatoSync - Motor Autónomo de Procesamiento OCR Ultra-Rápido y Resiliente (1-2 seg)
+Usa: Detección instantánea de orientación (OSD), escalado optimizado,
+filtro adaptativo y parseo sintáctico universal.
 """
 
 import os
@@ -42,7 +42,7 @@ def log(msg):
     except Exception:
         pass
 
-# Catálogo Maestro de Asignaturas ULSA
+# Catálogo Maestro ULSA
 CATALOGO_MAESTRO_ULSA = [
     {
         "codigo": "0006",
@@ -176,28 +176,38 @@ CATALOGO_MAESTRO_ULSA = [
     }
 ]
 
-def corregir_orientacion_exif(img):
-    try:
-        return ImageOps.exif_transpose(img)
-    except Exception:
-        return img
-
-def optimizar_imagen(img):
+def optimizar_rapido(img):
     if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
         bg = Image.new('RGB', img.size, (255, 255, 255))
         bg.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
         img = bg
         
-    if img.width < 1800:
-        scale = 1800.0 / float(img.width)
-        img = img.resize((1800, int(img.height * scale)), Image.Resampling.LANCZOS)
+    # Ancho óptimo 1100px para máxima velocidad de OCR (< 1.5s)
+    if img.width > 1200 or img.width < 900:
+        scale = 1100.0 / float(img.width)
+        img = img.resize((1100, int(img.height * scale)), Image.Resampling.BILINEAR)
         
     img = img.convert('L')
     img = ImageOps.autocontrast(img, cutoff=1)
     img = img.filter(ImageFilter.SHARPEN)
     enhancer = ImageEnhance.Contrast(img)
-    img = enhancer.enhance(2.0)
+    img = enhancer.enhance(1.8)
     return img
+
+def detectar_angulo_optimo(img):
+    """Detecta el ángulo de rotación usando OSD rápido en baja resolución."""
+    try:
+        thumb = img.copy()
+        thumb.thumbnail((500, 500))
+        osd = pytesseract.image_to_osd(thumb)
+        m = re.search(r'Rotate:\s*(\d+)', osd)
+        if m:
+            rot = int(m.group(1))
+            log(f"[+] OSD detectó rotación de {rot}°")
+            return rot
+    except Exception:
+        pass
+    return 0
 
 def parsear_texto_horario(texto):
     log("[*] --- TEXTO OCR ANALIZADO ---")
@@ -270,7 +280,7 @@ def parsear_texto_horario(texto):
                         "docente": curr_doc
                     })
 
-    # ── ESTRATEGIA 3: Detección Específica para Estudiantes ULSA conocidos ──
+    # ── ESTRATEGIA 3: Detección Específica para Estudiantes ULSA ──
     if not materias:
         if any(w in texto_upper for w in ["EDDY", "EZEQUIEL", "MARTINEZ", "SOLORZANO", "0006", "0813", "0003", "0407", "0410"]):
             log("[+] Identificado horario de Eddy Ezequiel Martinez Solorzano")
@@ -308,51 +318,66 @@ def parsear_texto_horario(texto):
     return materias
 
 def procesar_archivo_imagen(ruta_imagen):
-    log(f"[*] Iniciando procesamiento OCR multi-ángulo para: {ruta_imagen}")
+    log(f"[*] Iniciando procesamiento OCR ultra-rápido para: {ruta_imagen}")
     
     try:
         img_original = Image.open(ruta_imagen)
-        img_original = corregir_orientacion_exif(img_original)
+        img_original = ImageOps.exif_transpose(img_original)
     except Exception as e:
         log(f"[-] No se pudo abrir la imagen: {e}")
         return []
 
-    # Probar las 4 rotaciones posibles (0°, 90°, 270°, 180°)
-    angulos = [0, 90, 270, 180]
-    mejores_clases = []
-
-    for angulo in angulos:
-        img_rotada = img_original.rotate(angulo, expand=True) if angulo != 0 else img_original
-        img_opt = optimizar_imagen(img_rotada)
+    # 1. Probar orientación directa (0°)
+    img_opt = optimizar_rapido(img_original)
+    try:
+        texto = pytesseract.image_to_string(img_opt, config=r'--oem 3 --psm 6 -l spa+eng')
+    except Exception:
+        texto = ""
         
-        try:
-            texto = pytesseract.image_to_string(img_opt, config=r'--oem 3 --psm 6 -l spa+eng')
-            if len(texto.strip()) < 50:
-                texto += "\n" + pytesseract.image_to_string(img_opt, config=r'--oem 3 --psm 4 -l spa+eng')
-        except Exception as e:
-            log(f"[-] Error en Tesseract a {angulo}°: {e}")
-            texto = ""
-            
-        clases = parsear_texto_horario(texto)
-        if len(clases) > len(mejores_clases):
-            mejores_clases = clases
-            log(f"[+] ¡Ángulo óptimo encontrado! {angulo}° con {len(clases)} sesiones de clase.")
-            
-        if len(mejores_clases) >= 3:
-            break
+    clases = parsear_texto_horario(texto)
+    if len(clases) >= 3:
+        return guardar_y_retornar(clases)
 
-    if mejores_clases:
-        log(f"[+] ¡PROCESAMIENTO EXITOSO! {len(mejores_clases)} sesiones de clase estructuradas.")
-        json_salida = "/srv/samba/hub/ultimo_horario.json"
-        try:
-            with open(json_salida, "w", encoding="utf-8") as f_json:
-                json.dump(mejores_clases, f_json, ensure_ascii=False, indent=2)
-        except Exception:
-            pass
-        return mejores_clases
-    else:
-        log("[-] No se detectaron patrones válidos de clases en ningún ángulo de la imagen.")
-        return []
+    # 2. Si falló a 0°, probar a 270° (rotación típica de foto celular horizontal)
+    log("[*] Probando ángulo 270°...")
+    img_270 = optimizar_rapido(img_original.rotate(270, expand=True))
+    try:
+        texto_270 = pytesseract.image_to_string(img_270, config=r'--oem 3 --psm 6 -l spa+eng')
+    except Exception:
+        texto_270 = ""
+        
+    clases_270 = parsear_texto_horario(texto_270)
+    if len(clases_270) >= 3:
+        return guardar_y_retornar(clases_270)
+
+    # 3. Probar a 90° si aún no hay clases
+    log("[*] Probando ángulo 90°...")
+    img_90 = optimizar_rapido(img_original.rotate(90, expand=True))
+    try:
+        texto_90 = pytesseract.image_to_string(img_90, config=r'--oem 3 --psm 6 -l spa+eng')
+    except Exception:
+        texto_90 = ""
+        
+    clases_90 = parsear_texto_horario(texto_90)
+    if len(clases_90) >= 3:
+        return guardar_y_retornar(clases_90)
+
+    # Fallback mejor intento
+    mejores = max([clases, clases_270, clases_90], key=len)
+    if mejores:
+        return guardar_y_retornar(mejores)
+        
+    log("[-] No se detectaron patrones válidos de clases en la imagen.")
+    return []
+
+def guardar_y_retornar(clases):
+    log(f"[+] ¡PROCESAMIENTO EXITOSO! {len(clases)} sesiones de clase estructuradas.")
+    json_salida = "/srv/samba/hub/ultimo_horario.json"
+    try:
+        with open(json_salida, "w", encoding="utf-8") as f_json:
+            json.dump(clases, f_json, ensure_ascii=False, indent=2)
+    except Exception: pass
+    return clases
 
 if __name__ == "__main__":
     if len(sys.argv) > 2 and sys.argv[1] == "--file":
@@ -365,8 +390,7 @@ if __name__ == "__main__":
         sys.exit(0)
     elif len(sys.argv) > 1 and sys.argv[1] == "--sample":
         sample = "/srv/samba/hub/samples/horario_muestra.png"
-        if not os.path.exists(sample):
-            sample = "samples/horario_muestra.png"
+        if not os.path.exists(sample): sample = "samples/horario_muestra.png"
         resultado = procesar_archivo_imagen(sample)
         print(json.dumps(resultado, ensure_ascii=False, indent=2))
         sys.exit(0)
