@@ -137,4 +137,37 @@ if ($action === 'test_sample') {
     exit;
 }
 
+if ($action === 'send_mail') {
+    $to      = trim($_GET['to'] ?? 'importar@ulsa.local');
+    $subject = trim($_GET['subject'] ?? '[ChatoSync] Notificación');
+    $body    = trim($_GET['body'] ?? 'Notificación automática del servidor ChatoSync.');
+
+    // Sanitize
+    $to      = filter_var($to, FILTER_SANITIZE_EMAIL);
+    $subject = preg_replace('/[\r\n]/', '', $subject);
+
+    $headers  = "From: chatosync@ulsa.local\r\n";
+    $headers .= "Reply-To: chatosync@ulsa.local\r\n";
+    $headers .= "Content-Type: text/plain; charset=UTF-8\r\n";
+    $headers .= "X-Mailer: ChatoSync-Hub/2.0\r\n";
+
+    $cmd = sprintf(
+        'echo %s | /usr/sbin/sendmail -f chatosync@ulsa.local %s 2>&1',
+        escapeshellarg("Subject: $subject\nTo: $to\nFrom: chatosync@ulsa.local\n\n$body"),
+        escapeshellarg($to)
+    );
+    $out = shell_exec($cmd);
+
+    // Fallback: PHP mail()
+    $sent = @mail($to, $subject, $body, $headers);
+
+    echo json_encode([
+        'status'  => 'ok',
+        'message' => "Correo enviado a $to",
+        'detail'  => $out
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 echo json_encode(['status' => 'error', 'message' => 'Acción no válida.']);
+
