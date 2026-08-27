@@ -158,6 +158,12 @@ def procesar_archivo_imagen(ruta):
             txt = pytesseract.image_to_string(img_p, config='--oem 3 --psm 6 -l spa+eng')
         except Exception:
             txt = ""
+        # Debug: mostrar texto crudo del OCR
+        if "--debug" in sys.argv:
+            log("=== TEXTO RAW OCR ===")
+            log(repr(txt))
+            log("=== FIN TEXTO RAW ===")
+
         clases = parsear(txt)
         if len(clases) >= 4:
             log(f"[+] OK sin contraste a {rot}° en {time.time()-t0:.1f}s ({len(clases)} clases)")
@@ -169,6 +175,12 @@ def procesar_archivo_imagen(ruta):
             txt2 = pytesseract.image_to_string(img_p2, config='--oem 3 --psm 6 -l spa+eng')
         except Exception:
             txt2 = ""
+
+        if "--debug" in sys.argv:
+            log("=== TEXTO RAW OCR (contraste) ===")
+            log(repr(txt2))
+            log("=== FIN ===")
+
         clases2 = parsear(txt2)
         if len(clases2) >= 4:
             log(f"[+] OK con contraste a {rot}° en {time.time()-t0:.1f}s ({len(clases2)} clases)")
