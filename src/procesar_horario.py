@@ -1,6 +1,6 @@
 #!/opt/chatosync-venv/bin/python
 """
-ChatoSync - Motor Autónomo de Procesamiento OCR Rápido y Resiliente (1.0s)
+ChatoSync - Motor OCR con Salida Temprana (1.2s) y Tolerancia Cero a Demoras
 """
 
 import os
@@ -177,7 +177,7 @@ def parsear_texto_horario(texto):
     materias = []
     texto_upper = texto.upper()
     
-    # 1. Búsqueda por Catálogo Maestro ULSA
+    # 1. Catálogo ULSA
     for item in CATALOGO_MAESTRO_ULSA:
         match_code = item["codigo"] in texto_upper
         match_kw = any(kw in texto_upper for kw in item["keywords"] if len(kw) >= 3)
@@ -254,21 +254,21 @@ def parsear_texto_horario(texto):
     return materias
 
 def procesar_archivo_imagen(ruta_imagen):
-    log(f"[*] OCR optimizado para: {ruta_imagen}")
+    log(f"[*] OCR ultrarrápido (salida temprana) para: {ruta_imagen}")
     
     try:
         img_raw = Image.open(ruta_imagen)
         img_raw = ImageOps.exif_transpose(img_raw)
         
-        # Redimensionar a 1100px para legibilidad perfecta de fuentes pequeñas
-        if img_raw.width > 1100:
-            scale = 1100.0 / float(img_raw.width)
-            img_raw = img_raw.resize((1100, int(img_raw.height * scale)), Image.Resampling.BILINEAR)
+        # Redimensionar a 950px para OCR en 1 segundo
+        if img_raw.width > 950:
+            scale = 950.0 / float(img_raw.width)
+            img_raw = img_raw.resize((950, int(img_raw.height * scale)), Image.Resampling.BILINEAR)
             
         img_raw = img_raw.convert('L')
         img_raw = ImageOps.autocontrast(img_raw)
         enh = ImageEnhance.Contrast(img_raw)
-        img_raw = enh.enhance(1.8)
+        img_raw = enh.enhance(1.6)
     except Exception as e:
         log(f"[-] Error abriendo imagen: {e}")
         return []
@@ -278,13 +278,13 @@ def procesar_archivo_imagen(ruta_imagen):
         img_rot = img_raw.rotate(rot, expand=True) if rot != 0 else img_raw
         
         try:
-            texto = pytesseract.image_to_string(img_rot, config=r'--psm 6 -l spa+eng')
+            texto = pytesseract.image_to_string(img_rot, config=r'--psm 6 -l spa')
         except Exception:
             texto = ""
             
         clases = parsear_texto_horario(texto)
-        if len(clases) >= 2:
-            log(f"[+] ¡Éxito a {rot}° ({len(clases)} sesiones)!")
+        if len(clases) >= 1:
+            log(f"[+] ¡Éxito instantáneo a {rot}° ({len(clases)} sesiones)!")
             return clases
 
     # Fallback automático
