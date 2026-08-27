@@ -83,49 +83,51 @@ if ($action === 'logs') {
     exit;
 }
 
-// ─── Subida y Procesamiento OCR (Auto-Limpieza Inmediata de Memoria) ───────────
+// ─── Subida y Procesamiento OCR ───────────────────────────────────────────────
 if ($action === 'upload') {
     if (!isset($_FILES['horario']) || $_FILES['horario']['error'] !== UPLOAD_ERR_OK) {
         echo json_encode(['status' => 'error', 'message' => 'Error al subir archivo desde el navegador.']);
         exit;
     }
-    
+
     $tmpName = $_FILES['horario']['tmp_name'];
     $origExt = strtolower(pathinfo($_FILES['horario']['name'], PATHINFO_EXTENSION)) ?: 'png';
-    // Guardar temporalmente en /tmp (RAM/disco temporal)
-    $tempPath = "/tmp/ocr_schedule_" . time() . "_" . mt_rand(1000, 9999) . "." . $origExt;
-    
+    $tempPath = "/tmp/ocr_schedule_" . time() . "_" . mt_rand(1000,9999) . "." . $origExt;
+
     if (move_uploaded_file($tmpName, $tempPath)) {
         @chmod($tempPath, 0777);
-        // Buscar el script procesar_horario.py más reciente
+
         $scriptPath = "/srv/samba/hub/procesar_horario.py";
         if (!file_exists($scriptPath) || filesize($scriptPath) < 500) {
             $scriptPath = "/var/www/html/procesar_horario.py";
         }
-        
-        $cmd = "/opt/chatosync-venv/bin/python " . escapeshellarg($scriptPath) . " --file " . escapeshellarg($tempPath) . " 2>&1";
-        $raw = trim(shell_exec($cmd) ?: '');
 
-        // Extraer solo el JSON del output (ignorar logs de stderr mezclados)
-        $out = '';
-        if (preg_match('/(\[.*\]|\{.*\})/s', $raw, $m)) {
-            $out = $m[1];
-        }
+        // Separar stdout (JSON) de stderr (logs) correctamente
+        $jsonPath = "/tmp/ocr_json_" . time() . ".json";
+        $cmd = "/opt/chatosync-venv/bin/python " . escapeshellarg($scriptPath)
+             . " --file " . escapeshellarg($tempPath)
+             . " > " . escapeshellarg($jsonPath) . " 2>/tmp/ocr_debug.txt";
+        shell_exec($cmd);
 
-        if (file_exists($tempPath)) { @unlink($tempPath); }
+        $raw_json = trim(file_exists($jsonPath) ? file_get_contents($jsonPath) : '');
+        $raw_log  = trim(file_exists('/tmp/ocr_debug.txt') ? file_get_contents('/tmp/ocr_debug.txt') : '');
 
-        $clases = json_decode($out, true) ?: [];
+        @unlink($tempPath);
+        @unlink($jsonPath);
+
+        $clases = json_decode($raw_json, true);
+        if (!is_array($clases)) $clases = [];
 
         echo json_encode([
             'status'  => 'ok',
             'message' => 'Horario procesado exitosamente.',
             'count'   => count($clases),
             'clases'  => $clases,
-            'debug'   => substr($raw, 0, 1000)   // <-- muestra stderr para diagnóstico
+            'debug'   => substr($raw_log, -800)   // últimas líneas del log
         ], JSON_UNESCAPED_UNICODE);
         exit;
     } else {
-        echo json_encode(['status' => 'error', 'message' => 'No se pudo procesar la imagen temporal.']);
+        echo json_encode(['status' => 'error', 'message' => 'No se pudo guardar imagen temporal.']);
     }
     exit;
 }
