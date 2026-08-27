@@ -1,16 +1,24 @@
 <?php
 // ─── Datos del Hub (PHP renderizado en carga inicial) ───────────────────────
 $hubDir = "/srv/samba/hub/";
+$SYSTEM_FILES = ['ultimo_horario.json','horario_ulsa.ics','procesar_horario.py','chatosync.service'];
+$SYSTEM_EXTS  = ['py','sh','json','ics','log','conf','service'];
+
 $hubFiles = [];
 if (is_dir($hubDir)) {
     foreach (scandir($hubDir) as $f) {
         if ($f === '.' || $f === '..' || is_dir($hubDir.$f)) continue;
+        if (str_starts_with($f, '.')) continue;
+        if (in_array($f, $SYSTEM_FILES)) continue;
+        $ext = strtolower(pathinfo($f, PATHINFO_EXTENSION));
+        if (in_array($ext, $SYSTEM_EXTS)) continue;
         $hubFiles[] = ['name'=>$f,'size'=>filesize($hubDir.$f),'date'=>filemtime($hubDir.$f)];
     }
     usort($hubFiles, fn($a,$b)=>$b['date']-$a['date']);
 }
 $totalFiles = count($hubFiles);
 $totalSize = array_sum(array_column($hubFiles,'size'));
+
 function fmtSize($b){if($b>=1073741824)return round($b/1073741824,1).'GB';if($b>=1048576)return round($b/1048576,1).'MB';if($b>=1024)return round($b/1024,1).'KB';return $b.'B';}
 function fmtIcon($ext){$m=['pdf'=>'📄','doc'=>'📝','docx'=>'📝','zip'=>'🗜️','rar'=>'🗜️','mp4'=>'🎬','avi'=>'🎬','mp3'=>'🎵','jpg'=>'🖼️','jpeg'=>'🖼️','png'=>'🖼️','apk'=>'📱','ova'=>'💻','exe'=>'⚙️'];return $m[$ext]??'📁';}
 
@@ -366,13 +374,30 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
                             <p class="text-xs font-medium text-white truncate"><?=htmlspecialchars($f['name'])?></p>
                             <p class="text-[10px]" style="color:#555;"><?=fmtSize($f['size'])?> · <?=date('d/m H:i',$f['date'])?></p>
                         </div>
-                        <a href="/download.php?file=<?=urlencode($f['name'])?>"
-                           class="opacity-0 group-hover:opacity-100 transition-opacity text-xs px-2 py-1 rounded"
-                           style="background:var(--redbg);color:var(--red2);">
-                            <i class="fa-solid fa-download"></i>
-                        </a>
+                        <?php
+                        $previewableExts = ['pdf','png','jpg','jpeg','gif','webp','svg','mp4','webm','mp3','wav','ogg','txt','log','json','py','sh','md','csv'];
+                        $canPrev = in_array($ext, $previewableExts);
+                        ?>
+                        <div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <?php if ($canPrev): ?>
+                            <button type="button"
+                                    onclick="openPreview('<?=urlencode($f['name'])?>', '<?=$ext?>', '<?=htmlspecialchars(addslashes($f['name']))?>', '<?=fmtSize($f['size'])?>')"
+                                    class="text-xs px-2 py-1 rounded flex items-center gap-1"
+                                    style="background:var(--card2);color:var(--text);border:1px solid var(--border);"
+                                    title="Previsualizar">
+                                <i class="fa-solid fa-eye" style="color:var(--red2);"></i>
+                            </button>
+                            <?php endif; ?>
+                            <a href="/download.php?file=<?=urlencode($f['name'])?>"
+                               class="text-xs px-2 py-1 rounded"
+                               style="background:var(--redbg);color:var(--red2);"
+                               title="Descargar">
+                                <i class="fa-solid fa-download"></i>
+                            </a>
+                        </div>
                     </div>
                     <?php endforeach; endif;?>
+
                 </div>
                 <!-- QR -->
                 <div class="px-5 py-4 border-t flex items-center gap-4" style="border-color:var(--border);">
@@ -563,11 +588,25 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
                         <p class="text-sm font-medium text-white truncate"><?=htmlspecialchars($f['name'])?></p>
                         <p class="text-[11px]" style="color:#555;"><?=fmtSize($f['size'])?> · <?=date('d/m/Y H:i',$f['date'])?></p>
                     </div>
-                    <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <?php
+                    $canPrev2 = in_array($ext, $previewableExts);
+                    ?>
+                    <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <?php if ($canPrev2): ?>
+                        <button type="button"
+                                onclick="openPreview('<?=urlencode($f['name'])?>', '<?=$ext?>', '<?=htmlspecialchars(addslashes($f['name']))?>', '<?=fmtSize($f['size'])?>')"
+                                class="px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1"
+                                style="background:var(--card2);border:1px solid var(--border);color:var(--text);"
+                                title="Previsualizar">
+                            <i class="fa-solid fa-eye" style="color:var(--red2);"></i>
+                            <span>Ver</span>
+                        </button>
+                        <?php endif; ?>
                         <a href="/download.php?file=<?=urlencode($f['name'])?>"
-                           class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+                           class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white flex items-center gap-1"
                            style="background:var(--red);">
-                            <i class="fa-solid fa-download mr-1"></i>Descargar
+                            <i class="fa-solid fa-download"></i>
+                            <span>Descargar</span>
                         </a>
                         <a href="transfer.php?del=<?=urlencode($f['name'])?>"
                            onclick="return confirm('¿Eliminar <?=htmlspecialchars($f['name'])?>?')"
@@ -721,9 +760,41 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
             </div>
             <pre id="logViewerFull" class="p-5 text-xs font-mono min-h-96 overflow-y-auto whitespace-pre-wrap" style="color:#888;">Cargando...</pre>
         </div>
-    </section>
+    <!-- ═══════════════════ MODAL DE PREVISUALIZACIÓN ═══════════════════ -->
+    <div id="previewModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+        <div class="themed-card rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border"
+             style="background:var(--card);border-color:var(--border);">
+            <!-- Modal Header -->
+            <div class="h-14 px-5 flex items-center justify-between border-b flex-shrink-0"
+                 style="border-color:var(--border);">
+                <div class="flex items-center gap-2 min-w-0 pr-3">
+                    <span id="modalIcon" class="text-lg flex-shrink-0">📄</span>
+                    <h3 id="modalTitle" class="text-sm font-bold truncate text-white">Nombre de archivo</h3>
+                    <span id="modalSize" class="text-[11px] px-2 py-0.5 rounded font-mono font-semibold flex-shrink-0"
+                          style="background:var(--card2);color:var(--text2);border:1px solid var(--border);">0 KB</span>
+                </div>
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <a id="modalDownloadBtn" href="#" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white flex items-center gap-1.5"
+                       style="background:var(--red);">
+                        <i class="fa-solid fa-download"></i>
+                        <span class="hidden sm:inline">Descargar</span>
+                    </a>
+                    <button type="button" onclick="closePreview()"
+                            class="h-8 w-8 rounded-lg flex items-center justify-center transition-colors text-slate-400 hover:text-white"
+                            style="background:var(--card2);border:1px solid var(--border);">
+                        <i class="fa-solid fa-xmark text-sm"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- Modal Body Container -->
+            <div id="modalBody" class="p-4 overflow-y-auto flex-1 flex flex-col items-center justify-center min-h-[300px]">
+                <!-- Contenido dinámico inyectado por openPreview() -->
+            </div>
+        </div>
+    </div>
 
 </div><!-- /ml-56 -->
+
 
 <script>
 // ─── QR Codes ────────────────────────────────────────────────────────────────
@@ -1081,8 +1152,79 @@ function toggleTheme(){
     applyTheme(next);
 }
 
+// ─── Modal de Previsualización ────────────────────────────────────────────────
+const previewModal = document.getElementById('previewModal');
+const modalBody    = document.getElementById('modalBody');
+const modalTitle   = document.getElementById('modalTitle');
+const modalSize    = document.getElementById('modalSize');
+const modalIcon    = document.getElementById('modalIcon');
+const modalDownload= document.getElementById('modalDownloadBtn');
+
+const extIcons = {
+    'pdf':'📄','png':'🖼️','jpg':'🖼️','jpeg':'🖼️','gif':'🖼️','webp':'🖼️','svg':'🖼️',
+    'mp4':'🎬','webm':'🎬','mov':'🎬','mp3':'🎵','wav':'🎵','ogg':'🎵',
+    'txt':'📋','log':'📋','json':'📋','py':'🐍','sh':'🔧','md':'📝','csv':'📊'
+};
+
+function openPreview(encodedFilename, ext, displayName, size) {
+    const rawUrl = 'download.php?file=' + encodedFilename;
+    const previewUrl = rawUrl + '&preview=1';
+    
+    modalTitle.textContent = displayName;
+    modalSize.textContent  = size;
+    modalIcon.textContent  = extIcons[ext] || '📄';
+    modalDownload.href     = rawUrl;
+    modalBody.innerHTML    = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-3xl" style="color:var(--red2);"></i><p class="text-xs mt-2 text-slate-400">Cargando previsualización...</p></div>';
+    
+    previewModal.classList.remove('hidden');
+    previewModal.classList.add('flex');
+
+    if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) {
+        modalBody.innerHTML = `<div class="flex items-center justify-center p-2"><img src="${previewUrl}" alt="${displayName}" class="max-h-[72vh] max-w-full rounded-xl object-contain shadow-2xl border border-neutral-700/50"></div>`;
+    } else if (ext === 'pdf') {
+        modalBody.innerHTML = `<iframe src="${previewUrl}" class="w-full h-[72vh] rounded-xl border border-neutral-700 bg-white" style="border:none;"></iframe>`;
+    } else if (['mp4','webm','mov'].includes(ext)) {
+        modalBody.innerHTML = `<div class="flex items-center justify-center w-full"><video controls autoplay class="max-h-[70vh] w-full max-w-3xl rounded-xl shadow-2xl bg-black"><source src="${previewUrl}">Tu navegador no soporta video HTML5.</video></div>`;
+    } else if (['mp3','wav','ogg'].includes(ext)) {
+        modalBody.innerHTML = `
+            <div class="py-12 px-6 flex flex-col items-center justify-center gap-4 text-center">
+                <div class="h-20 w-20 rounded-full flex items-center justify-center text-4xl shadow-xl" style="background:var(--redbg);">🎵</div>
+                <h4 class="text-sm font-semibold text-white">${displayName}</h4>
+                <audio controls autoplay class="w-full max-w-md mt-2"><source src="${previewUrl}">Tu navegador no soporta audio HTML5.</audio>
+            </div>`;
+    } else if (['txt','log','json','py','sh','md','csv'].includes(ext)) {
+        fetch(previewUrl)
+            .then(r => r.text())
+            .then(text => {
+                const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                modalBody.innerHTML = `<pre class="w-full p-4 rounded-xl text-xs font-mono overflow-auto max-h-[70vh] whitespace-pre-wrap" style="background:var(--card2);color:var(--text);border:1px solid var(--border);">${escaped}</pre>`;
+            })
+            .catch(() => {
+                modalBody.innerHTML = `<div class="text-center text-xs p-8" style="color:var(--red2);">No se pudo cargar el archivo de texto.</div>`;
+            });
+    } else {
+        modalBody.innerHTML = `
+            <div class="py-12 px-6 flex flex-col items-center justify-center gap-4 text-center">
+                <div class="text-5xl">📑</div>
+                <h4 class="text-sm font-semibold text-white">${displayName}</h4>
+                <p class="text-xs text-slate-400 max-w-sm">Este tipo de archivo (${ext.toUpperCase()}) se puede descargar y abrir con la aplicación correspondiente en tu dispositivo.</p>
+                <a href="${rawUrl}" class="mt-2 px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-2" style="background:var(--red);"><i class="fa-solid fa-download"></i> Descargar Ahora</a>
+            </div>`;
+    }
+}
+
+function closePreview() {
+    previewModal.classList.add('hidden');
+    previewModal.classList.remove('flex');
+    modalBody.innerHTML = '';
+}
+
+window.addEventListener('keydown', e => { if (e.key === 'Escape') closePreview(); });
+previewModal.addEventListener('click', e => { if (e.target === previewModal) closePreview(); });
+
 // Aplicar tema guardado al cargar (después de que el DOM está listo)
 (function(){ applyTheme(localStorage.getItem('chatosync-theme') || 'dark'); })();
 </script>
 </body>
 </html>
+
