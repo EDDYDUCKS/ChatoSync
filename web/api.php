@@ -103,20 +103,25 @@ if ($action === 'upload') {
             $scriptPath = "/var/www/html/procesar_horario.py";
         }
         
-        $cmd = "/opt/chatosync-venv/bin/python " . escapeshellarg($scriptPath) . " --file " . escapeshellarg($tempPath) . " 2>/dev/null";
-        $out = trim(shell_exec($cmd) ?: '');
-        
+        $cmd = "/opt/chatosync-venv/bin/python " . escapeshellarg($scriptPath) . " --file " . escapeshellarg($tempPath) . " 2>&1";
+        $raw = trim(shell_exec($cmd) ?: '');
+
+        // Extraer solo el JSON del output (ignorar logs de stderr mezclados)
+        $out = '';
+        if (preg_match('/(\[.*\]|\{.*\})/s', $raw, $m)) {
+            $out = $m[1];
+        }
+
         if (file_exists($tempPath)) { @unlink($tempPath); }
-        
+
         $clases = json_decode($out, true) ?: [];
 
-        
         echo json_encode([
-            'status' => 'ok',
+            'status'  => 'ok',
             'message' => 'Horario procesado exitosamente.',
-            'count' => count($clases),
-            'clases' => $clases,
-            'debug' => substr($out, 0, 500)
+            'count'   => count($clases),
+            'clases'  => $clases,
+            'debug'   => substr($raw, 0, 1000)   // <-- muestra stderr para diagnóstico
         ], JSON_UNESCAPED_UNICODE);
         exit;
     } else {
