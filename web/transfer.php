@@ -4,15 +4,42 @@ $uploadDir = "/srv/samba/hub/";
 $message = ''; $msgType = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['archivo'])) {
+    header('Content-Type: application/json; charset=utf-8');
     $file = $_FILES['archivo'];
     if ($file['error'] === UPLOAD_ERR_OK) {
+        if (!is_dir($uploadDir)) {
+            @mkdir($uploadDir, 0777, true);
+        }
+        @chmod($uploadDir, 0777);
+
         $name = preg_replace('/[^a-zA-Z0-9\._\-]/', '_', basename($file['name']));
         $dest = $uploadDir . $name;
-        if (file_exists($dest)) { $info=pathinfo($name); $name=$info['filename'].'_'.time().'.'.(($info['extension'])??'bin'); $dest=$uploadDir.$name; }
-        if (move_uploaded_file($file['tmp_name'], $dest)) { chmod($dest,0777); $message="✓ \"$name\" subido exitosamente."; $msgType='ok'; }
-        else { $message="✗ Error al guardar. Verifique permisos del servidor."; $msgType='err'; }
-    } else { $message="✗ Error en la subida: código ".$file['error']; $msgType='err'; }
+        if (file_exists($dest)) {
+            $info = pathinfo($name);
+            $name = $info['filename'] . '_' . time() . '.' . ($info['extension'] ?? 'bin');
+            $dest = $uploadDir . $name;
+        }
+        if (move_uploaded_file($file['tmp_name'], $dest)) {
+            @chmod($dest, 0777);
+            echo json_encode(['status' => 'ok', 'message' => "Archivo \"$name\" subido exitosamente."]);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => "Error al guardar en el servidor. Verifique permisos en $uploadDir"]);
+        }
+    } else {
+        $errText = match ($file['error']) {
+            UPLOAD_ERR_INI_SIZE => 'El archivo supera el tamaño máximo permitido por PHP (upload_max_filesize).',
+            UPLOAD_ERR_FORM_SIZE => 'El archivo supera el tamaño máximo del formulario.',
+            UPLOAD_ERR_PARTIAL => 'La subida se interrumpió.',
+            UPLOAD_ERR_NO_FILE => 'No se seleccionó ningún archivo.',
+            UPLOAD_ERR_NO_TMP_DIR => 'Falta la carpeta temporal en el servidor.',
+            UPLOAD_ERR_CANT_WRITE => 'Error de escritura en disco en el servidor.',
+            default => 'Código de error: ' . $file['error']
+        };
+        echo json_encode(['status' => 'error', 'message' => $errText]);
+    }
+    exit;
 }
+
 if (isset($_GET['del'])) {
     $del = basename($_GET['del']); $path = $uploadDir.$del;
     if (file_exists($path) && !is_dir($path)) { unlink($path); header("Location: transfer.php"); exit; }
@@ -315,30 +342,25 @@ function doUpload(){
     };
 
     xhr.onload = () => {
-        // Revisar si PHP devolvió un error HTTP
-        if (xhr.status >= 400) {
-            showUploadMsg(false, '✗ Error del servidor HTTP ' + xhr.status + '. Verifica permisos en /srv/samba/hub/');
+        try {
+            const res = JSON.parse(xhr.responseText);
+            if (res.status === 'ok') {
+                showUploadMsg(true, '✓ ' + (res.message || 'Archivo subido correctamente.'));
+                setTimeout(() => window.location.reload(), 700);
+            } else {
+                showUploadMsg(false, '✗ ' + (res.message || 'Error al guardar el archivo.'));
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-rocket mr-2"></i>Reintentar';
+            }
+        } catch (e) {
+            showUploadMsg(false, '✗ Error en respuesta del servidor: ' + xhr.responseText.substring(0, 100));
             btn.disabled = false;
             btn.innerHTML = '<i class="fa-solid fa-rocket mr-2"></i>Reintentar';
-            return;
         }
-
-        // Si la respuesta contiene texto de error PHP
-        const resp = xhr.responseText || '';
-        if (resp.includes('move_uploaded_file') || resp.includes('Permission denied') || resp.includes('Error')) {
-            showUploadMsg(false, '✗ Error al guardar: ' + resp.substring(0, 120));
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-rocket mr-2"></i>Reintentar';
-            return;
-        }
-
-        // Éxito — recargar para mostrar el archivo en la lista
-        showUploadMsg(true, '✓ Archivo subido correctamente. Actualizando lista…');
-        setTimeout(() => window.location.reload(), 800);
     };
 
     xhr.onerror = () => {
-        showUploadMsg(false, '✗ Error de conexión con el servidor. ¿Está activo Apache?');
+        showUploadMsg(false, '✗ Error de conexión de red con el servidor.');
         btn.disabled = false;
         btn.innerHTML = '<i class="fa-solid fa-rocket mr-2"></i>Reintentar';
     };

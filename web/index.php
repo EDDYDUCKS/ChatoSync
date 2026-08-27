@@ -910,10 +910,24 @@ function doTransferUpload(){
             document.getElementById('transferPct').textContent=p+'%';
         }
     };
-    xhr.onload=()=>location.reload();
+    xhr.onload=()=>{
+        try {
+            const res = JSON.parse(xhr.responseText);
+            if(res.status === 'ok') {
+                location.reload();
+            } else {
+                alert(res.message || 'Error al subir archivo');
+                btn.disabled=false;
+                btn.innerHTML='<i class="fa-solid fa-rocket mr-2"></i>Enviar al Servidor';
+            }
+        } catch(e) {
+            location.reload();
+        }
+    };
     xhr.open('POST','transfer.php',true);
     xhr.send(fd);
 }
+
 
 // ─── Send Test Mail ───────────────────────────────────────────────────────────
 function sendTestMail(){
