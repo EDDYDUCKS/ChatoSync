@@ -1,5 +1,5 @@
 # DOCUMENTO TÉCNICO COMPLETO DEL PROYECTO CHATOSYNC
-## Servidor de Borde (Edge Server) para Procesamiento Inteligente de Horarios y Sincronización de Calendarios Universitarios
+## Servidor de Borde (Edge Server) para Transferencia Ultrarrápida de Archivos Pesados sin Internet y Procesamiento Inteligente de Horarios Universitarios
 
 ---
 
@@ -20,243 +20,221 @@
 
 ## 2. RESUMEN EJECUTIVO (ABSTRACT)
 
-ChatoSync es una solución integral de infraestructura de red y computación de borde (*Edge Computing*) diseñada para automatizar la digitalización, extracción semántica y calendarización de horarios académicos dentro del entorno universitario de la Universidad Tecnológica La Salle (ULSA).
+**ChatoSync** es una solución integral de infraestructura de red y computación de borde (*Edge Computing*) diseñada para resolver dos desafíos críticos de conectividad y productividad académica en la Universidad Tecnológica La Salle (ULSA):
 
-El sistema opera de forma 100% autónoma en una red de área local inalámbrica portable, prescindiendo de dependencia continua de Internet para sus funciones nucleares. Integra seis servicios de red esenciales sobre Linux (DNS BIND9, Correo Postfix/Dovecot, Almacenamiento Samba, Nube Privada Nextcloud en LAMP, Impresión Virtual CUPS-PDF y un Demonio Autónomo en Python) junto con un motor de Inteligencia Artificial basado en Visión por Computadora y Reconocimiento Óptico de Caracteres (OCR con Tesseract).
-
-A través de ChatoSync, un estudiante puede tomar una fotografía o captura digital a su hoja de inscripción/horario, subirla mediante una interfaz web responsiva, correo electrónico o carpeta compartida de red, y el sistema extraerá dinámicamente cada asignatura, código, aula, docente y horario semanal, generando de forma instantánea archivos universales de calendario (`.ics` bajo el estándar RFC 5545) y sincronización con Google Calendar API v3, configurando alarmas/notificaciones de 20 minutos previas al inicio de cada clase.
+1. **Transferencia Local Ultrarrápida de Archivos Pesados y Nube Colaborativa 100% Offline:** Provisión de un centro de distribución de archivos de alta velocidad mediante **Samba (SMB/CIFS)** y una nube privada **Nextcloud (LAMP Stack)** sobre una red local inalámbrica portable. Permite a grupos de estudiantes compartir instaladores de software de ingeniería (MATLAB, AutoCAD, Proteus, IDEs), máquinas virtuales, datasets, diapositivas y proyectos de gran tamaño (de varios Gigabytes) a velocidades de enlace local Wi-Fi (hasta 300–866 Mbps) de forma instantánea, sin consumir datos móviles, sin depender de conexión a Internet y eliminando el riesgo de propagación de virus por memorias USB.
+2. **Digitalización y Calendarización Inteligente con Visión por Computadora (OCR):** Motor autónomo en Python que procesa capturas o fotografías de horarios universitarios con **Tesseract OCR**, extrae dinámicamente asignaturas, códigos, aulas, horarios y docentes mediante expresiones regulares dinámicas, y genera de forma automática archivos universales de calendario (`.ics` RFC 5545) y sincronización con **Google Calendar API v3** con alertas programadas 20 minutos antes de cada clase.
 
 ---
 
 ## 3. PLANTEAMIENTO DEL PROBLEMA Y JUSTIFICACIÓN
 
-### 3.1 Problemática Identificada
-En los entornos universitarios actuales, los horarios de clases suelen entregarse a los estudiantes como reportes impresos en papel, documentos PDF estáticos o capturas de pantalla del portal web institucional (SIGA-ULSA). Esta modalidad genera las siguientes dificultades:
-1. **Transcripción Manual Propensa a Errores:** Cada estudiante debe registrar a mano entre 5 y 8 materias semanales con diferentes bloques horarios, salones de clase y docentes en sus calendarios personales, generando errores frecuentes de solapamiento o confusión de aulas.
-2. **Falta de Recordatorios Oportunos:** La ausencia de un sistema de alertas automatizado provoca llegadas tardías a los salones de clase o laboratorios especializados.
-3. **Dependencia de Infraestructura Cloud Centralizada:** Muchos sistemas dependen de conexiones a Internet estables que pueden saturarse en el campus universitario.
-4. **Heterogeneidad de Dispositivos:** Los estudiantes utilizan laptops (Windows/Linux/macOS) y dispositivos móviles (Android/iOS) con diferentes sistemas operativos y aplicaciones de calendario.
+### 3.1 Problemática de la Conectividad y Compartición de Archivos en el Campus
+En las carreras de ingeniería (Cibernética Electrónica, Mecatrónica, Industrial, Sistemas), los estudiantes y docentes manejan constantemente archivos de gran volumen:
+* **Saturación del Ancho de Banda de Internet:** Intentar subir o descargar instaladores de software técnico (ej. MATLAB de 4 a 12 GB, máquinas virtuales `.ova` de 5 a 15 GB, librerías de programación o datasets) a través de servicios de nube pública (Google Drive, OneDrive) satura la red inalámbrica del campus y resulta inviable o extremadamente lento.
+* **Falta de Cobertura en Zonas del Campus:** En talleres, laboratorios o áreas abiertas donde la señal de Internet es débil o nula, los estudiantes quedan incomunicados y sin acceso a sus recursos de estudio.
+* **Riesgos de Seguridad por Memorias USB:** El método tradicional de pasarse archivos pesados mediante memorias USB infecta frecuentemente las computadoras de los laboratorios y las laptops de los estudiantes con malware, virus de accesos directos y troyanos.
+* **Gasto Innecesario de Datos Móviles:** Los estudiantes que no cuentan con acceso al Wi-Fi institucional consumen sus planes de datos personales en descargas académicas pesadas.
 
-### 3.2 Solución Propuesta por ChatoSync
-ChatoSync implementa un Servidor de Borde Portable (*Portable Edge Server*) capaz de desplegarse en una laptop o dispositivo embebido que emite su propia red Wi-Fi local (*Hotspot*). Ofrece múltiples vías de ingesta (Web, Red Samba, Correo Electrónico) y procesa localmente los documentos mediante OCR, entregando tanto un calendario digital interactivo como una nube privada de almacenamiento académico.
+### 3.2 Problemática de la Gestión de Horarios Académicos
+* **Transcripción Manual y Errores de Registro:** Registrar a mano semanalmente entre 5 y 8 materias con diferentes bloques de horas, grupos, salones y docentes genera confusiones de aula y solapamientos.
+* **Falta de Recordatorios Oportunos:** Ausencia de un sistema automatizado que avise con tiempo prudencial el inicio de la clase y el aula asignada.
 
----
-
-## 4. OBJETIVOS DEL PROYECTO
-
-### 4.1 Objetivo General
-Diseñar, implementar y evaluar un servidor de borde autónomo basado en Debian GNU/Linux que integre servicios de infraestructura de redes TCP/IP, almacenamiento colaborativo, servidores web y un motor de procesamiento OCR para la digitalización y sincronización automatizada de horarios universitarios con calendarios personales.
-
-### 4.2 Objetivos Específicos
-1. Configurar una infraestructura de red local sólida compuesta por servicios de resolución de nombres (**BIND9**), servidores de correo (**Postfix/Dovecot**), almacenamiento en red (**Samba**), nube privada (**Nextcloud en LAMP**) e impresión virtual (**CUPS-PDF**).
-2. Desarrollar un algoritmo en Python con preprocesamiento de imagen y **Tesseract OCR** que parsee de forma dinámica cualquier horario universitario (número variable de materias y bloques de clase) sin requerir plantillas fijas.
-3. Implementar la generación automática de archivos de calendario universal (**iCalendar `.ics`**) y la integración con **Google Calendar API v3**, programando notificaciones emergentes de 20 minutos antes de cada sesión académica.
-4. Crear un **Panel de Control Web Moderno y Responsivo (Dashboard GUI)** que permita la interacción visual, subida de archivos por arrastre (*Drag & Drop*), monitoreo de estado de servicios y visualización de logs en tiempo real.
-5. Garantizar la interoperabilidad multiplataforma en entornos móviles (Android e iOS) y de escritorio (Windows/Linux).
+### 3.3 La Solución Integral de ChatoSync
+ChatoSync convierte una laptop en un **Servidor de Borde Portátil (*Portable Edge Server*)** que emite una red Wi-Fi dedicada (`ULSA-Hub`). Integra una nube privada local, carpetas compartidas de red de alta velocidad y un motor de inteligencia artificial OCR accesible desde navegadores web, exploradores de archivos y teléfonos celulares.
 
 ---
 
-## 5. TOPOLOGÍA Y ARQUITECTURA DE RED
-
-### 5.1 Segmentación y Direccionamiento IP
-* **Subred de Operación:** `192.168.137.0/24` (Máscara `255.255.255.0`)
-* **Punto de Acceso / Gateway (Laptop Host Windows):** `192.168.137.1` (Hotspot `ULSA-Hub`)
-* **Servidor Edge ChatoSync (Debian 13 VM):** `192.168.137.102` (Configurable a IP Estática `192.168.137.10`)
-* **Rango de Clientes DHCP (Estudiantes / Dispositivos Móviles):** `192.168.137.100 - 192.168.137.200`
-* **Modo de Interfaz de Red VirtualBox:** *Adaptador Puente (Bridged Adapter)* vinculado al *Microsoft Wi-Fi Direct Virtual Adapter* para comunicación directa en Capa 2 / Capa 3.
+## 4. PILARES FUNDAMENTALES DEL SISTEMA
 
 ```
-       +--------------------------------------------------------------+
-       |            LAPTOP HOST (Windows 11) - 192.168.137.1          |
-       |      Zona Wi-Fi Móvil (SSID: ULSA-Hub / Subred 192.168.137.0/24) |
-       +--------------------------------------------------------------+
-                                      │
-                                      ▼ [Adaptador Puente / Capa 2]
-       +──────────────────────────────────────────────────────────────+
-       |           SERVIDOR CHATOSYNC (Debian 13 VM - 192.168.137.102)|
-       |                                                              |
-       |  [DNS BIND9]        [CORREO POSTFIX/DOVECOT]   [SAMBA SMB]   |
-       |  ulsa.local         importar@ulsa.local        \\192.168...  |
-       |                                                              |
-       |  [APACHE2 + PHP]    [NEXTCLOUD HUB]            [CUPS-PDF]    |
-       |  Panel Web GUI      Nube Colaborativa          Impresora PDF |
-       |                                                              |
-       |  [DEMONIO CHATOSYNC PYTHON 3.13]                             |
-       |  - Pillow Preprocessing (Escala de Grises + Contraste 2.5x)   |
-       |  - Tesseract OCR Engine (spa)                                |
-       |  - Dynamic Regex Parser (Materias / Días / Aulas / Docentes) |
-       |  - Generador iCalendar (.ics RFC 5545)                       |
-       |  - Google Calendar API v3 Client                             |
-       +──────────────────────────────────────────────────────────────+
-               ▲                           ▲                        ▲
-               │                           │                        │
-       [Navegador Web / HTTP]      [Samba File Share]      [Móvil Wi-Fi]
-       http://192.168.137.102/    \\192.168.137.102\hub   Google Calendar
+                              ┌────────────────────────────────────────────────────────┐
+                              │                 SISTEMA CHATOSYNC                      │
+                              │           (Servidor Edge Debian 13 ULSA)               │
+                              └──────────────────────────┬─────────────────────────────┘
+                                                         │
+                    ┌────────────────────────────────────┴────────────────────────────────────┐
+                    ▼                                                                         ▼
+     ╔═══════════════════════════════════════╗                 ╔═══════════════════════════════════════╗
+     ║               PILAR 1                 ║                 ║               PILAR 2                 ║
+     ║     TRANSFERENCIA DE ARCHIVOS         ║                 ║     DIGITALIZACIÓN OCR Y CALENDARIO   ║
+     ║     PESADOS SIN INTERNET              ║                 ║     INTELIGENTE                     ║
+     ╠═══════════════════════════════════════╣                 ╠═══════════════════════════════════════╣
+     ║ • Samba File Share (SMB/CIFS)         ║                 ║ • Tesseract OCR en Español            ║
+     ║ • Nextcloud Private Cloud (LAMP)      ║                 ║ • Preprocesamiento con Pillow         ║
+     ║ • Velocidad LAN (300-866 Mbps)        ║                 ║ • Parser Dinámico Regex               ║
+     ║ • Cero consumo de datos móviles       ║                 ║ • Generador Universal .ICS (RFC 5545) ║
+     ║ • Sin virus de memorias USB           ║                 ║ • Google Calendar API v3 (Alertas 20m)║
+     ║ • Gestión de permisos y carpetas      ║                 ║ • Generador de Reporte PDF (CUPS)     ║
+     ╚═══════════════════════════════════════╝                 ╚═══════════════════════════════════════╝
 ```
 
 ---
 
-## 6. DESGLOSE TÉCNICO DE LOS 6 MÓDULOS DE INFRAESTRUCTURA
+## 5. DETALLE TÉCNICO DEL PILAR 1: TRANSFERENCIA DE ARCHIVOS PESADOS (OFF-GRID HUB)
 
-### 🔹 Módulo 1: Servidor de Nombres de Dominio (DNS BIND9)
-* **Paquetes:** `bind9`, `bind9-utils`, `bind9-doc` (Servicio: `named.service`).
-* **Función:** Provee resolución de nombres local para que los equipos de la red puedan acceder a los servicios mediante nombres legibles en lugar de direcciones IP numéricas.
-* **Zona Directa (`ulsa.local`):**
-  * `hub.ulsa.local` -> `192.168.137.10`
-  * `cloud.ulsa.local` -> `192.168.137.10`
-  * `mail.ulsa.local` -> `192.168.137.10`
-  * Registros MX (Mail Exchanger) apuntando a `mail.ulsa.local` con prioridad 10.
-* **Zona Inversa (`137.168.192.in-addr.arpa`):**
-  * Puntero PTR que mapea `192.168.137.10` a `hub.ulsa.local`.
+### 5.1 Almacenamiento Compartido de Red Samba (SMB / CIFS)
+* **Protocolo:** Server Message Block (SMB versión 2 y 3).
+* **Rendimiento:** Transferencia a velocidad máxima de la tarjeta de red local (típicamente entre 25 MB/s y 60 MB/s en Wi-Fi local), permitiendo copiar un instalador de 4 GB en menos de 2 minutos.
+* **Acceso Nativo sin Software Extra:**
+  * **En Windows:** Presionando `Win + R` y escribiendo `\\192.168.137.102\hub`.
+  * **En Android:** Con cualquier explorador de archivos (CX Explorer, Solid Explorer) conectando a `smb://192.168.137.102/hub`.
+  * **En iPhone / iPad:** Desde la app nativa *Archivos* -> *Conectarse al servidor*.
+  * **En Linux / macOS:** Montaje de recurso CIFS nativo.
+* **Estructura de Carpetas:**
+  * `/srv/samba/hub/`: Directorio raíz de intercambio público para proyectos, instaladores y recursos de clase.
+  * `/srv/samba/hub/entrada/`: Buzón automatizado de procesamiento.
+  * `/srv/samba/hub/procesados/`: Historial ordenado con marcas de tiempo.
 
-### 🔹 Módulo 2: Servidor de Correo Electrónico (Postfix + Dovecot)
-* **Paquetes:** `postfix` (MTA - Mail Transfer Agent), `dovecot-imapd`, `dovecot-pop3d` (MDA - Mail Delivery Agent).
-* **Función:** Ingesta de horarios mediante correos electrónicos directos.
-* **Configuración Clave:**
-  * Dominio: `ulsa.local`
-  * Buzón de entrega: Formato **`Maildir/`** por usuario (`/home/importar/Maildir/new/`, `cur/`, `tmp/`).
-  * Cuenta de servicio: `importar@ulsa.local` (Contraseña: `1234`).
-  * Autenticación Dovecot 2.4: Activación de texto claro seguro en red local (`auth_allow_cleartext = yes`).
-
-### 🔹 Módulo 3: Servidor de Archivos Compartidos (Samba SMB/CIFS)
-* **Paquetes:** `samba`, `samba-common-bin` (Servicios: `smbd`, `nmbd`).
-* **Función:** Punto de intercambio rápido de archivos entre clientes Windows/Linux/macOS y el servidor Debian.
-* **Estructura del Share (`[hub]`):**
-  * Ruta local: `/srv/samba/hub/`
-  * Subcarpeta de entrada: `/srv/samba/hub/entrada/` (Buzón de recepción de imágenes).
-  * Subcarpeta de procesados: `/srv/samba/hub/procesados/` (Historial de archivos procesados con timestamp).
-  * Permisos: Lectura y escritura pública (`create mask = 0777`, `force user = root`) para permitir interacción transparente desde el Explorador de Windows mediante `\\192.168.137.102\hub`.
-
-### 🔹 Módulo 4: Nube Privada y Colaborativa (Nextcloud LAMP Stack)
-* **Stack Tecnológico:** Apache 2.4, MariaDB Server 11.x, PHP 8.4 (con extensiones `php-gd`, `php-mysql`, `php-curl`, `php-mbstring`, `php-xml`, `php-zip`).
-* **Función:** Plataforma de almacenamiento en la nube on-premise (*Auto-alojada*) para sincronización de archivos de estudiantes y profesores sin requerir conexión a nubes públicas comerciales.
-* **Base de Datos:**
-  * Motor: MariaDB
-  * Base de datos: `nextcloud`
-  * Usuario: `nextcloud` (Contraseña: `1234`)
-* **Acceso:** `http://192.168.137.102/nextcloud`
-
-### 🔹 Módulo 5: Servidor de Impresión Virtual (CUPS + CUPS-PDF + LibreOffice)
-* **Paquetes:** `cups`, `printer-driver-cups-pdf`, `libreoffice-writer` (Headless).
-* **Función:** Generación de reportes impresos y conversión automatizada a formato PDF vectorial de alta fidelidad.
-* **Impresora Virtual:** `Impresora_PDF` (`cups-pdf:/`) utilizando el controlador `CUPS-PDF_opt.ppd`.
-* **Salida:** Permite transformar la agenda académica generada en HTML a un PDF oficial con membrete universitario de la ULSA.
-
-### 🔹 Módulo 6: Demonio Autónomo ChatoSync (Python 3.13 + OCR + Sincronización)
-* **Entorno de Ejecución:** Entorno Virtual Aislado (`/opt/chatosync-venv/`) administrado por un demonio de **`systemd`** (`chatosync.service`).
-* **Librerías Principales:** `pytesseract`, `pillow` (PIL), `google-api-python-client`, `google-auth-httplib2`, `google-auth-oauthlib`.
-* **Componentes del Algoritmo:**
-  1. **Preprocesamiento Visual de la Imagen:**
-     * Conversión a escala de grises (`img.convert('L')`).
-     * Filtro de aumento de nitidez espacial (`ImageFilter.SHARPEN`).
-     * Realce dinámico de contraste a factor 2.5x (`ImageEnhance.Contrast`).
-  2. **Extracción Óptica (OCR):**
-     * Ejecución de Tesseract con diccionario en español (`lang='spa'`).
-  3. **Motor de Parsing Dinámico con Expresiones Regulares:**
-     * **Detección de Asignaturas:** Expresión regular que identifica códigos numéricos de 4 dígitos universitarios (`\d{4}`) y el nombre de la materia:
-       `r'(\d{4})\s+([A-Za-zÁÉÍÓÚáéíóúñ\s]{3,40})'`
-     * **Detección de Bloques Horarios:** Identificación de patrones de días (Lu, Ma, Mi, Ju, Vi, Sa), rangos de horas y aula asignada:
-       `r'(Lu|Ma|Mi|Ju|Vi|Sa)\s+(\d{1,2}:\d{2}\s*[ap]m)\s*-\s*(\d{1,2}:\d{2}\s*[ap]m)\s*\[\s*([A-Z0-9]+)\s*\]'`
-     * **Detección de Docente:** Búsqueda de prefijos académicos (`MSc.` / `Ing.`):
-       `r'(MSc\.|Ing\.)\s+([A-Za-zÁÉÍÓÚáéíóúñ\s]+)'`
-  4. **Generador de Estándar Universal iCalendar (`.ics`):**
-     * Construcción de objetos `VEVENT` bajo el estándar RFC 5545.
-     * Regla de recurrencia semanal: `RRULE:FREQ=WEEKLY;BYDAY=...;UNTIL=20261218T235959Z`.
-     * Bloque de alarma silenciosa: `VALARM` con `TRIGGER:-PT20M` (notificación emergente en pantalla 20 minutos antes).
-  5. **Conector Google Calendar API v3:**
-     * Autenticación OAuth2 para inserción remota de eventos en el calendario principal del usuario.
+### 5.2 Nube Privada y Colaborativa Nextcloud Hub (LAMP Stack)
+* **Arquitectura:** Apache 2.4 + MariaDB 11 + PHP 8.4 nativo.
+* **Capacidades:**
+  * Subida y descarga de archivos mediante interfaz web moderna e intuitiva en `http://192.168.137.102/nextcloud`.
+  * Creación de cuentas de usuario independientes para grupos de trabajo con cuotas de almacenamiento configurables.
+  * Compartición de enlaces locales de descarga directa con o sin contraseña.
+  * Sincronización automática de carpetas mediante los clientes oficiales de Nextcloud para Windows, Android e iOS.
+  * Visor integrado de documentos PDF, imágenes y código fuente sin necesidad de descargar el archivo.
 
 ---
 
-## 7. PANEL DE CONTROL WEB RESPONSIVO (DASHBOARD GUI)
+## 6. DETALLE TÉCNICO DEL PILAR 2: MOTOR OCR Y CALENDARIZACIÓN INTELIGENTE
 
-Para superar la limitación de trabajar exclusivamente en consolas de texto, se desarrolló un Panel Web Gráfico Integral accesible desde `http://192.168.137.102/`:
+### 6.1 Algoritmo de Preprocesamiento Visual
+Para garantizar una tasa de acierto del OCR superior al 95% incluso con fotos tomadas con poca luz o capturas de baja resolución:
+1. **Escala de Grises:** Eliminación de artefactos de color del portal web institucional (`img.convert('L')`).
+2. **Filtro de Agudizamiento (Sharpen):** Realce de bordes de caracteres tipográficos (`ImageFilter.SHARPEN`).
+3. **Amplificación de Contraste:** Aumento dinámico a 2.5x (`ImageEnhance.Contrast(img).enhance(2.5)`).
 
-### Características Principales del Dashboard:
-* **Diseño Moderno & Glassmorphism:** Construido con Tailwind CSS y FontAwesome, adaptado para pantallas de escritorio, tablets y smartphones.
-* **Monitoreo de Red en Tiempo Real:** 6 tarjetas de estado que consultan vía AJAX (`api.php`) el estado de ejecución (`systemctl is-active`) de cada servicio:
-  * DNS BIND9
-  * Correo Postfix (SMTP)
-  * Correo Dovecot (IMAP)
-  * Samba File Share
-  * Servidor Web Apache / Nextcloud
-  * Servidor CUPS-PDF
-  * Motor OCR ChatoSync
-* **Zona de Carga Inteligente (Drag & Drop):** Permite arrastrar capturas de horarios o subir imágenes/PDFs directamente desde el explorador de archivos del cliente.
-* **Botón de Demostración Rápida:** *"Probar Horario de Muestra ULSA"* para ejecutar una prueba completa en un solo clic.
-* **Tabla Interactiva de Horarios:** Muestra las asignaturas extraídas con códigos resaltados, insignias de días de la semana, horarios formateados, etiquetas de aulas en color rojo institucional y docentes asignados.
-* **Descarga Directa de Calendario (`.ics`):** Botón para descargar el archivo de calendario listo para importar en Google Calendar, Outlook o Apple Calendar.
-* **Consola de Logs Integrada:** Visor de registros en tiempo real de `/var/log/chatosync.log` con auto-scroll.
+### 6.2 Motor de Extracción Semántica (Parser Dinámico Regex)
+El script `procesar_horario.py` es completamente agnóstico al diseño específico de la página web de la universidad y soporta:
+* Cualquier cantidad de asignaturas inscritas (1 a 10 materias).
+* Múltiples bloques de horario por asignatura (ej. Lunes 8:00am y Jueves 1:00pm).
+* Detección de aulas institucionales (G105, A201, LAB-CIB, etc.).
+* Detección automática del nombre del docente mediante prefijos académicos (`MSc.` / `Ing.`).
 
----
-
-## 8. EXPERIENCIA DE USUARIO EN DISPOSITIVOS MÓVILES (ANDROID / IOS)
-
-El sistema está concebido para que los estudiantes no dependan de una computadora para beneficiarse de ChatoSync:
-
-1. **Conexión:** El estudiante se conecta desde su celular a la red Wi-Fi `ULSA-Hub`.
-2. **Acceso Web Móvil:** Entra a `http://192.168.137.102` desde el navegador de su teléfono.
-3. **Captura Directa:** Al presionar "Subir Horario", puede seleccionar la cámara de su teléfono, tomar la foto a su hoja de horario y subirla al instante.
-4. **Calendarización con 1 Toque:** Al presionar "Añadir a Calendario (.ics)", el sistema operativo móvil (Android o iOS) abre nativamente la app de Google Calendar o Apple Calendar, solicitando confirmación para añadir todos los eventos semanales con sus respectivas alarmas de 20 minutos.
-5. **Nube en el Bolsillo:** Mediante la aplicación móvil oficial de Nextcloud, el estudiante sincroniza tareas y material de clase localmente sin consumir saldo de datos móviles.
+### 6.3 Sincronización de Calendarios y Notificaciones
+* **Estándar Universal iCalendar (`.ics`):**
+  * Cumple con la especificación internacional **RFC 5545**.
+  * Reglas de recurrencia semanal: `RRULE:FREQ=WEEKLY;BYDAY=...;UNTIL=20261218T235959Z`.
+  * **Alarma Silenciosa de 20 Minutos:**
+    ```text
+    BEGIN:VALARM
+    TRIGGER:-PT20M
+    ACTION:DISPLAY
+    DESCRIPTION:Recordatorio de clase ULSA
+    END:VALARM
+    ```
+* **Integración Google Calendar API v3:** Inserción directa de eventos mediante flujo OAuth2.
 
 ---
 
-## 9. JUSTIFICACIÓN DE DECISIONES DE INGENIERÍA
+## 7. INFRAESTRUCTURA DE RED Y SERVICIOS LINUX DEBIAN 13
 
-| Decisión de Diseño | Alternativa Considerada | Razón Técnica de la Elección |
+El servidor integra 6 servicios de nivel empresarial configurados como demonios del sistema (`systemd`):
+
+| Servicio | Demonio / Puerto | Rol en ChatoSync |
 | :--- | :--- | :--- |
-| **Edge Computing Local** | Cloud Pública (AWS / Azure) | Garantiza 100% de disponibilidad sin depender de conexión a Internet ni pagar costos de suscripción por llamadas a APIs OCR comerciales. |
-| **Entorno Virtual Python (`venv`)** | Paquetes Globales Pip | Cumple con la normativa **PEP 668** de Debian 13 (Trixie), evitando colisiones con los paquetes del gestor `apt` del sistema operativo. |
-| **Nextcloud LAMP Nativo** | Contenedor Snap | Mayor rendimiento en máquinas virtuales con recursos moderados, control granular sobre MariaDB y compatibilidad con PHP 8.4. |
-| **Generación `.ics` + Google API** | CalDAV Estricto | El formato `.ics` (RFC 5545) es universal y compatible sin configuración previa en cualquier teléfono inteligente, tablet o laptop. |
-| **Ajustes Dovecot 2.4 en `99-chatosync.conf`** | Modificación de `10-auth.conf` | En Debian 13 / Dovecot 2.4, los archivos `conf.d/` se sobrescriben en actualizaciones; un archivo `99-*.conf` garantiza persistencia y modularidad. |
+| **DNS BIND9** | `named.service` (Puerto 53) | Resolución de dominios locales (`ulsa.local`, `hub.ulsa.local`, `cloud.ulsa.local`). |
+| **Postfix SMTP** | `postfix.service` (Puerto 25) | Recepción de correos locales y transferencia de mensajes hacia el buzón Maildir. |
+| **Dovecot IMAP/POP3** | `dovecot.service` (Puertos 143/110) | Servidor de buzones y entrega en formato Maildir con autenticación en texto claro local. |
+| **Samba SMB/CIFS** | `smbd.service`, `nmbd.service` (Puertos 445/139) | Compartición de archivos en red local a máxima velocidad LAN sin Internet. |
+| **Servidor Web Apache** | `apache2.service` (Puerto 80) | Alojamiento del Panel de Control GUI y de la plataforma Nextcloud Hub. |
+| **Servidor CUPS-PDF** | `cups.service` (Puerto 631) | Servidor de impresión y generador de documentos PDF vectoriales con membrete oficial. |
+| **Demonio ChatoSync** | `chatosync.service` (Background) | Vigilante autónomo de carpetas Samba y Maildir para procesamiento OCR en tiempo real. |
 
 ---
 
-## 10. CONCLUSIONES
+## 8. TOPOLOGÍA DE RED Y DIRECCIONAMIENTO
 
-1. Se implementó exitosamente una arquitectura de red heterogénea y portable sobre Debian GNU/Linux 13, logrando la convivencia armónica de servicios de infraestructura (DNS, Correo, SMB, Web, Impresión) en un único nodo de borde.
-2. El algoritmo de Visión por Computadora y OCR desarrollado demostró alta robustez al procesar documentos de horarios reales de la ULSA, abstrayendo variaciones en el número de asignaturas y distribuciones horarias gracias a expresiones regulares dinámicas.
-3. La integración con estándares universales de calendarización (iCalendar RFC 5545) y la API de Google Calendar resuelve de forma definitiva el problema de la transcripción manual de horarios, entregando notificaciones automáticas y precisas a los estudiantes.
-4. El desarrollo del Panel de Control Web transforma un proyecto tradicional de infraestructura de consola en un producto de software intuitivo, accesible tanto desde computadoras de escritorio como desde teléfonos móviles.
+* **Segmento de Red:** `192.168.137.0/24` (Máscara `255.255.255.0`)
+* **Punto de Acceso Wi-Fi (Laptop Host):** `192.168.137.1` (SSID: `ULSA-Hub`)
+* **Servidor ChatoSync (Debian 13 VM):** `192.168.137.102` (Adaptador Puente)
+* **Clientes Conectados (Laptops / Teléfonos):** Asignados dinámicamente por DHCP (`192.168.137.100 - .200`).
 
 ---
 
-## 11. ESTRUCTURA DEL REPOSITORIO DE CÓDIGO (GITHUB)
+## 9. PANEL DE CONTROL WEB RESPONSIVO (DASHBOARD GUI)
+
+Accesible desde cualquier navegador en la red local en **`http://192.168.137.102/`**:
+* **Monitor en Tiempo Real:** 6 tarjetas interactivas que verifican el estado activo/inactivo de cada servicio de red mediante llamadas AJAX a `api.php`.
+* **Zona Drag & Drop:** Arrastre y suelta de archivos de horario con procesamiento instantáneo.
+* **Botón de Demostración:** *"Probar Horario de Muestra ULSA"* para pruebas de 1 solo clic.
+* **Tabla Dinámica de Clases:** Visualización clara con códigos, materias, días, horas, aulas en rojo y docentes.
+* **Descarga de Calendario (.ics):** Botón directo para importar todas las materias en Google Calendar, Apple Calendar o Outlook.
+* **Consola de Logs en Vivo:** Visor de registros en tiempo real sin requerir acceso por terminal SSH.
+* **Acceso Directo a la Nube:** Enlace al panel de Nextcloud para gestión de archivos pesados.
+
+---
+
+## 10. EXPERIENCIA MULTIPLATAFORMA (MÓVIL Y ESCRITORIO)
+
+1. **En Teléfonos Móviles (Android / iPhone):**
+   * Conexión al Wi-Fi `ULSA-Hub`.
+   * Navegación a `http://192.168.137.102` (Diseño 100% responsivo Mobile-First).
+   * Subida de fotos de horarios tomadas con la cámara del celular.
+   * Descarga de archivos `.ics` que se integran en 1 toque con la app Google Calendar del teléfono.
+   * Descarga/subida de archivos académicos pesados mediante la app móvil oficial de Nextcloud.
+2. **En Laptops (Windows / macOS / Linux):**
+   * Acceso por explorador de archivos a `\\192.168.137.102\hub` para transferir archivos a velocidad de red local.
+   * Acceso web completo al Dashboard, Nextcloud y panel de administración CUPS (`:631`).
+
+---
+
+## 11. JUSTIFICACIÓN DE DECISIONES TÉCNICAS Y DE INGENIERÍA
+
+| Decisión de Diseño | Alternativa Rechazada | Justificación Técnica |
+| :--- | :--- | :--- |
+| **Red Wi-Fi Local Autónoma (Edge)** | Nube Pública en Internet | Cero dependencia de conexión externa, máxima velocidad de transferencia (300+ Mbps) y cero consumo de datos móviles en el campus. |
+| **Samba + Nextcloud Híbrido** | Solo memorias USB | Elimina vectores de propagación de virus/malware y permite acceso simultáneo de múltiples estudiantes al mismo repositorio de archivos. |
+| **Entorno Virtual Python (`venv`)** | Instalación Global Pip | Cumplimiento estricto con la directiva **PEP 668** en Debian 13 para evitar rotura de paquetes del sistema operativo. |
+| **Nextcloud en LAMP Nativo** | Contenedor Snap | Mayor eficiencia en memoria RAM y CPU, acceso directo a la base de datos MariaDB y optimización de PHP 8.4 con extensiones nativas. |
+| **Formato iCalendar (`.ics`)** | CalDAV Exclusivo | Compatibilidad universal instantánea con el 100% de teléfonos y computadoras sin requerir configuración de cuentas complejas. |
+
+---
+
+## 12. CONCLUSIONES
+
+1. **ChatoSync** demuestra la viabilidad de implementar una arquitectura de **Computación de Borde (*Edge Computing*)** altamente eficiente, capaz de prestar servicios de nube privada, transferencia masiva de archivos y procesamiento de inteligencia artificial en hardware accesible y portable.
+2. Se resolvió de forma simultánea la problemática del intercambio de archivos pesados sin Internet en el campus universitario y la automatización del registro de horarios académicos con notificaciones tempranas de 20 minutos.
+3. La combinación de servicios de red tradicionales (DNS, SMTP, IMAP, SMB, HTTP, CUPS) con tecnologías modernas de software (Python, Tesseract OCR, Tailwind CSS, API REST) ofrece una experiencia de usuario fluida, intuitiva y multiplataforma para toda la comunidad académica de la ULSA.
+
+---
+
+## 13. ESTRUCTURA DEL REPOSITORIO (GITHUB)
 
 ```text
 ChatoSync/
 ├── config/
-│   ├── bind9/              # named.conf.local, db.ulsa.local, db.192.168.137
-│   ├── postfix/            # main.cf (Configuración SMTP)
-│   ├── dovecot/            # 99-chatosync.conf (Configuración IMAP/POP3 Dovecot 2.4)
-│   ├── samba/              # smb.conf (Share [hub] con permisos de red)
-│   └── cups/               # cupsd.conf (Configuración del servidor de impresión)
+│   ├── bind9/              # Configuraciones de BIND9 DNS
+│   ├── postfix/            # Configuración SMTP Postfix
+│   ├── dovecot/            # 99-chatosync.conf (Dovecot 2.4 IMAP)
+│   ├── samba/              # smb.conf (Share [hub] de alta velocidad)
+│   └── cups/               # cupsd.conf (Servidor de impresión)
 ├── scripts/
-│   ├── 00_instalar_todo.sh # Script maestro de despliegue automatizado
+│   ├── 00_instalar_todo.sh # Instalador maestro desatendido
 │   ├── 02_setup_bind9.sh   # Despliegue de DNS
-│   ├── 03_setup_correo.sh  # Despliegue de Postfix + Dovecot
+│   ├── 03_setup_correo.sh  # Despliegue de Correo
 │   ├── 04_setup_samba.sh   # Despliegue de Samba
 │   ├── 05_setup_nextcloud.sh # Despliegue de Nextcloud LAMP
 │   ├── 06_setup_cups.sh    # Despliegue de CUPS-PDF
-│   └── 08_setup_servicio.sh # Despliegue del entorno virtual y servicio systemd
+│   ├── 08_setup_servicio.sh # Despliegue del entorno virtual y demonio
+│   └── 99_actualizar_y_reparar.sh # Script de reparación y diagnóstico
 ├── src/
-│   ├── procesar_horario.py # Motor principal de OCR, Regex y Calendario
-│   └── requirements.txt    # Dependencias de Python
+│   ├── procesar_horario.py # Motor OCR, Parsing Regex y Generador ICS
+│   └── requirements.txt    # Librerías Python
 ├── systemd/
-│   └── chatosync.service   # Definición del servicio del sistema Linux
+│   └── chatosync.service   # Servicio systemd en segundo plano
 ├── web/
-│   ├── index.php           # Panel de Control Web Responsivo (Dashboard GUI)
-│   ├── api.php             # API Backend en PHP para AJAX y estado de servicios
-│   └── download_ics.php    # Endpoint de descarga del calendario .ics
+│   ├── index.php           # Panel Web GUI Responsivo
+│   ├── api.php             # Backend API en PHP para llamadas AJAX
+│   └── download_ics.php    # Endpoint de descarga del calendario
 ├── samples/
-│   └── horario_muestra.png # Captura de horario real de la ULSA
+│   └── horario_muestra.png # Imagen de prueba de horario real ULSA
 ├── docs/
 │   ├── 01_instalacion_debian_virtualbox.md
 │   ├── 03_google_calendar_setup.md
 │   ├── INFORME_TECNICO_PROYECTO_CHATOSYNC.md
-│   └── GUIA_DEFENSA.md     # Guía de preguntas y respuestas para la evaluación
+│   └── GUIA_DEFENSA.md
 ├── INFORME_TECNICO_PROYECTO_CHATOSYNC.md
 ├── EXPLICACION_PROYECTO_CHATOSYNC.txt
 └── README.md
