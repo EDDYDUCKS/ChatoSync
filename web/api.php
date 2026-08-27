@@ -8,6 +8,10 @@ function checkService($service) {
     return trim($out) === 'active';
 }
 
+function fmtSize($b){if($b>=1073741824)return round($b/1073741824,1).'GB';if($b>=1048576)return round($b/1048576,1).'MB';if($b>=1024)return round($b/1024,1).'KB';return $b.'B';}
+function fmtIcon($ext){$m=['pdf'=>'📄','doc'=>'📝','docx'=>'📝','zip'=>'🗜️','rar'=>'🗜️','mp4'=>'🎬','avi'=>'🎬','mp3'=>'🎵','jpg'=>'🖼️','jpeg'=>'🖼️','png'=>'🖼️','apk'=>'📱','ova'=>'💻','exe'=>'⚙️'];return $m[$ext]??'📁';}
+
+// ─── Estado de Servicios ──────────────────────────────────────────────────────
 if ($action === 'status') {
     $services = [
         'dns'   => ['name' => 'DNS BIND9 (ulsa.local)', 'active' => checkService('named')],
@@ -29,51 +33,78 @@ if ($action === 'status') {
     exit;
 }
 
+// ─── Archivos en Tiempo Real (AJAX Polling) ───────────────────────────────────
+if ($action === 'files') {
+    $hubDir = "/srv/samba/hub/";
+    $SYSTEM_FILES = ['ultimo_horario.json','horario_ulsa.ics','procesar_horario.py','chatosync.service','index.php','api.php','transfer.php','download.php'];
+    $SYSTEM_EXTS  = ['php','py','sh','json','ics','log','conf','service','bak'];
+    $previewableExts = ['pdf','png','jpg','jpeg','gif','webp','svg','mp4','webm','mp3','wav','ogg','txt','log','json','py','sh','md','csv'];
+
+    $files = [];
+    if (is_dir($hubDir)) {
+        foreach (scandir($hubDir) as $f) {
+            if ($f === '.' || $f === '..' || is_dir($hubDir.$f)) continue;
+            if (str_starts_with($f, '.')) continue;
+            if (in_array($f, $SYSTEM_FILES)) continue;
+            $ext = strtolower(pathinfo($f, PATHINFO_EXTENSION));
+            if (in_array($ext, $SYSTEM_EXTS)) continue;
+            $sz = filesize($hubDir.$f);
+            $files[] = [
+                'name' => $f,
+                'size' => $sz,
+                'size_formatted' => fmtSize($sz),
+                'date' => filemtime($hubDir.$f),
+                'date_formatted' => date('d/m H:i', filemtime($hubDir.$f)),
+                'ext' => $ext,
+                'icon' => fmtIcon($ext),
+                'can_preview' => in_array($ext, $previewableExts)
+            ];
+        }
+        usort($files, fn($a,$b)=>$b['date']-$a['date']);
+    }
+    
+    $totalSize = array_sum(array_column($files, 'size'));
+    echo json_encode([
+        'status' => 'ok',
+        'count' => count($files),
+        'total_size' => $totalSize,
+        'total_size_formatted' => fmtSize($totalSize),
+        'files' => $files
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// ─── Logs del Sistema ─────────────────────────────────────────────────────────
 if ($action === 'logs') {
     $lines = 40;
     $logFile = '/var/log/chatosync.log';
-    if (file_exists($logFile)) {
-        $logs = shell_exec("tail -n $lines $logFile 2>/dev/null");
-    } else {
-        $logs = "No se encontró archivo de log.";
-    }
+    $logs = file_exists($logFile) ? shell_exec("tail -n $lines $logFile 2>/dev/null") : "No se encontró archivo de log.";
     echo json_encode(['status' => 'ok', 'logs' => $logs]);
     exit;
 }
 
-if ($action === 'last_data') {
-    $jsonFile = '/srv/samba/hub/ultimo_horario.json';
-    if (file_exists($jsonFile)) {
-        $content = file_get_contents($jsonFile);
-        $data = json_decode($content, true);
-        echo json_encode(['status' => 'ok', 'data' => $data], JSON_UNESCAPED_UNICODE);
-    } else {
-        echo json_encode(['status' => 'empty', 'message' => 'Aún no se ha procesado ningún horario.']);
-    }
-    exit;
-}
-
+// ─── Subida y Procesamiento OCR (Auto-Limpieza Inmediata de Memoria) ───────────
 if ($action === 'upload') {
     if (!isset($_FILES['horario']) || $_FILES['horario']['error'] !== UPLOAD_ERR_OK) {
         echo json_encode(['status' => 'error', 'message' => 'Error al subir archivo desde el navegador.']);
         exit;
     }
     
-    $uploadDir = "/srv/samba/hub/entrada/";
-    if (!is_dir($uploadDir)) {
-        @mkdir($uploadDir, 0777, true);
-    }
-    @chmod($uploadDir, 0777);
-    
     $tmpName = $_FILES['horario']['tmp_name'];
-    $origName = basename($_FILES['horario']['name']);
-    $dest = $uploadDir . time() . "_" . $origName;
+    $origExt = strtolower(pathinfo($_FILES['horario']['name'], PATHINFO_EXTENSION)) ?: 'png';
+    // Guardar temporalmente en /tmp (RAM/disco temporal)
+    $tempPath = "/tmp/ocr_schedule_" . time() . "_" . mt_rand(1000, 9999) . "." . $origExt;
     
-    if (move_uploaded_file($tmpName, $dest)) {
-        @chmod($dest, 0777);
+    if (move_uploaded_file($tmpName, $tempPath)) {
+        @chmod($tempPath, 0777);
         // Ejecutar procesamiento con Python
-        $cmd = "/opt/chatosync-venv/bin/python /srv/samba/hub/procesar_horario.py --file " . escapeshellarg($dest);
+        $cmd = "/opt/chatosync-venv/bin/python /srv/samba/hub/procesar_horario.py --file " . escapeshellarg($tempPath);
         $out = shell_exec($cmd);
+        
+        // AUTO-LIMPIEZA INMEDIATA: Borrar la foto del disco para no ocupar memoria ni almacenamiento
+        if (file_exists($tempPath)) {
+            @unlink($tempPath);
+        }
         
         // Extraer JSON limpio del output
         $res = json_decode($out, true);
@@ -83,16 +114,16 @@ if ($action === 'upload') {
         
         echo json_encode([
             'status' => 'ok',
-            'message' => 'Horario procesado exitosamente.',
+            'message' => 'Horario procesado exitosamente (imagen auto-eliminada del servidor).',
             'clases' => is_array($res) ? $res : [],
-            'raw_output' => $out
         ], JSON_UNESCAPED_UNICODE);
     } else {
-        echo json_encode(['status' => 'error', 'message' => 'No se pudo guardar el archivo en la carpeta del servidor.']);
+        echo json_encode(['status' => 'error', 'message' => 'No se pudo procesar la imagen temporal.']);
     }
     exit;
 }
 
+// ─── Muestra de Prueba ────────────────────────────────────────────────────────
 if ($action === 'test_sample') {
     $samples = [
         "/var/www/html/samples/horario_muestra.png",
@@ -103,10 +134,7 @@ if ($action === 'test_sample') {
     
     $sampleFile = null;
     foreach ($samples as $s) {
-        if (file_exists($s)) {
-            $sampleFile = $s;
-            break;
-        }
+        if (file_exists($s)) { $sampleFile = $s; break; }
     }
     
     if (!$sampleFile) {
@@ -114,13 +142,13 @@ if ($action === 'test_sample') {
         exit;
     }
     
-    $dest = "/srv/samba/hub/entrada/horario_muestra_" . time() . ".png";
-    @mkdir(dirname($dest), 0777, true);
-    @copy($sampleFile, $dest);
-    @chmod($dest, 0777);
+    $tempDest = "/tmp/sample_ocr_" . time() . ".png";
+    @copy($sampleFile, $tempDest);
     
-    $cmd = "/opt/chatosync-venv/bin/python /srv/samba/hub/procesar_horario.py --file " . escapeshellarg($dest);
+    $cmd = "/opt/chatosync-venv/bin/python /srv/samba/hub/procesar_horario.py --file " . escapeshellarg($tempDest);
     $out = shell_exec($cmd);
+    
+    if (file_exists($tempDest)) { @unlink($tempDest); }
     
     $res = json_decode($out, true);
     if (!$res && preg_match('/\[.*\]/s', $out, $matches)) {
@@ -129,19 +157,18 @@ if ($action === 'test_sample') {
     
     echo json_encode([
         'status' => 'ok',
-        'message' => 'Horario de muestra procesado con éxito.',
+        'message' => 'Horario de muestra procesado.',
         'clases' => is_array($res) ? $res : []
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
+// ─── Generación y Exportación de .ICS para Google Calendar ────────────────────
 if ($action === 'export_ics') {
-    // Generación dinámica de .ics a partir de JSON enviado por el cliente
     $postBody = file_get_contents('php://input');
     $clases = json_decode($postBody, true);
     
     if (!is_array($clases) || empty($clases)) {
-        // Fallback: leer del archivo último
         $lastJson = "/srv/samba/hub/ultimo_horario.json";
         if (file_exists($lastJson)) {
             $clases = json_decode(file_get_contents($lastJson), true);
@@ -189,7 +216,7 @@ if ($action === 'export_ics') {
         $doc = $c['docente'] ?? 'Docente Asignado';
         
         $ics[] = "BEGIN:VEVENT";
-        $ics[] = "UID:ulsa-{$cod}-{$dia}-{$i}@chatosync.ulsa.local";
+        $ics[] = "UID:ulsa-{$cod}-{$dia}-{$i}-" . time() . "@chatosync.ulsa.local";
         $ics[] = "DTSTAMP:" . gmdate('Ymd\THis\Z');
         $ics[] = "DTSTART:{$dtStart}";
         $ics[] = "DTEND:{$dtEnd}";
@@ -209,7 +236,7 @@ if ($action === 'export_ics') {
     $ics[] = "END:VCALENDAR";
     $icsContent = implode("\r\n", $ics) . "\r\n";
     
-    // Guardar en el hub para descarga estándar
+    // Guardar temporalmente para descarga directa
     @file_put_contents("/srv/samba/hub/horario_ulsa.ics", $icsContent);
     @chmod("/srv/samba/hub/horario_ulsa.ics", 0777);
     

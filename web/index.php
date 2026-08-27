@@ -258,9 +258,10 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
                     <span class="text-[11px] md:text-xs font-semibold uppercase tracking-wider" style="color:#666;">Archivos en Hub</span>
                     <i class="fa-solid fa-folder-open text-base" style="color:var(--red);"></i>
                 </div>
-                <div class="text-3xl md:text-4xl font-black text-white kpi-red"><?=$totalFiles?></div>
-                <div class="text-[11px]" style="color:#555;"><?=fmtSize($totalSize)?> total · Samba + Web</div>
+                <div class="text-3xl md:text-4xl font-black text-white kpi-red" id="kpiFilesCount"><?=$totalFiles?></div>
+                <div class="text-[11px]" style="color:#555;" id="kpiFilesSize"><?=fmtSize($totalSize)?> total · Samba + Web</div>
             </div>
+
             <!-- Classes -->
             <div class="rounded-xl p-4 md:p-5 space-y-2 md:space-y-3 fade-up themed-card" style="animation-delay:.05s">
                 <div class="flex items-center justify-between">
@@ -349,7 +350,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
                         <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-cloud-arrow-down mr-2" style="color:var(--red);"></i>Archivos en Hub</h3>
                         <a href="/transfer.php" class="text-xs font-semibold text-red-400">Ver todos ➔</a>
                     </div>
-                    <div class="divide-y max-h-[300px] overflow-y-auto" style="border-color:var(--border);">
+                    <div id="recentFilesContainer" class="divide-y max-h-[300px] overflow-y-auto" style="border-color:var(--border);">
                         <?php if(empty($hubFiles)):?>
                         <div class="px-5 py-8 text-center text-xs" style="color:#444;">
                             <i class="fa-solid fa-folder-open text-2xl mb-2 block opacity-20"></i>
@@ -572,7 +573,7 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
                     <i class="fa-solid fa-rotate mr-1"></i>Actualizar
                 </button>
             </div>
-            <div class="divide-y" style="border-color:var(--border);">
+            <div id="fullFilesContainer" class="divide-y" style="border-color:var(--border);">
                 <?php if(empty($hubFiles)):?>
                 <div class="p-10 text-center text-xs" style="color:#444;">
                     <i class="fa-solid fa-inbox text-3xl mb-2 block opacity-20"></i>
@@ -1257,16 +1258,121 @@ function closePreview() {
 window.addEventListener('keydown', e => { if (e.key === 'Escape') closePreview(); });
 previewModal.addEventListener('click', e => { if (e.target === previewModal) closePreview(); });
 
+// ─── Actualización en Tiempo Real de Archivos (Live Polling) ─────────────────
+function refreshRealtimeFiles() {
+    fetch('api.php?action=files')
+        .then(r => r.json())
+        .then(d => {
+            if(d.status === 'ok') {
+                // Actualizar KPIs de archivos
+                const kpiFiles = document.getElementById('kpiFilesCount');
+                if(kpiFiles) kpiFiles.textContent = d.count;
+                const kpiSize = document.getElementById('kpiFilesSize');
+                if(kpiSize) kpiSize.textContent = `${d.total_size_formatted} total · Samba + Web`;
+
+                // Actualizar lista reciente en Dashboard
+                const recentContainer = document.getElementById('recentFilesContainer');
+                if(recentContainer) {
+                    if(!d.files.length) {
+                        recentContainer.innerHTML = `
+                            <div class="px-5 py-8 text-center text-xs" style="color:#444;">
+                                <i class="fa-solid fa-folder-open text-2xl mb-2 block opacity-20"></i>
+                                Hub vacío — Sube archivos desde Transfer
+                            </div>`;
+                    } else {
+                        const recents = d.files.slice(0, 6);
+                        recentContainer.innerHTML = recents.map(f => `
+                            <div class="flex items-center gap-3 px-5 py-2.5 hover:bg-white/5 transition-colors group">
+                                <span class="text-lg flex-shrink-0">${f.icon}</span>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs font-medium text-white truncate">${f.name}</p>
+                                    <p class="text-[10px]" style="color:#555;">${f.size_formatted} · ${f.date_formatted}</p>
+                                </div>
+                                <div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    ${f.can_preview ? `
+                                    <button type="button"
+                                            onclick="openPreview('${encodeURIComponent(f.name)}', '${f.ext}', '${f.name.replace(/'/g,"\\'")}', '${f.size_formatted}')"
+                                            class="text-xs px-2 py-1 rounded flex items-center gap-1"
+                                            style="background:var(--card2);color:var(--text);border:1px solid var(--border);"
+                                            title="Previsualizar">
+                                        <i class="fa-solid fa-eye" style="color:var(--red2);"></i>
+                                    </button>` : ''}
+                                    <a href="/download.php?file=${encodeURIComponent(f.name)}"
+                                       class="text-xs px-2 py-1 rounded"
+                                       style="background:var(--redbg);color:var(--red2);"
+                                       title="Descargar">
+                                        <i class="fa-solid fa-download"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+
+                // Actualizar lista completa en panel Transfer
+                const fullContainer = document.getElementById('fullFilesContainer');
+                if(fullContainer) {
+                    if(!d.files.length) {
+                        fullContainer.innerHTML = `
+                            <div class="p-10 text-center text-xs" style="color:#444;">
+                                <i class="fa-solid fa-inbox text-3xl mb-2 block opacity-20"></i>
+                                No hay archivos en el Hub — sube el primero arriba
+                            </div>`;
+                    } else {
+                        fullContainer.innerHTML = d.files.map(f => `
+                            <div class="flex items-center gap-3 px-5 py-3 hover:bg-white/5 transition-colors group">
+                                <span class="text-xl">${f.icon}</span>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm font-medium text-white truncate">${f.name}</p>
+                                    <p class="text-[11px]" style="color:#555;">${f.size_formatted} · ${f.date_formatted}</p>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    ${f.can_preview ? `
+                                    <button type="button"
+                                            onclick="openPreview('${encodeURIComponent(f.name)}', '${f.ext}', '${f.name.replace(/'/g,"\\'")}', '${f.size_formatted}')"
+                                            class="px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1"
+                                            style="background:var(--card2);border:1px solid var(--border);color:var(--text);"
+                                            title="Previsualizar">
+                                        <i class="fa-solid fa-eye" style="color:var(--red2);"></i>
+                                        <span class="hidden sm:inline">Ver</span>
+                                    </button>` : ''}
+                                    <a href="/download.php?file=${encodeURIComponent(f.name)}"
+                                       class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white flex items-center gap-1 shadow-sm"
+                                       style="background:var(--red);">
+                                        <i class="fa-solid fa-download"></i>
+                                        <span class="hidden sm:inline">Descargar</span>
+                                    </a>
+                                    <a href="transfer.php?del=${encodeURIComponent(f.name)}"
+                                       onclick="return confirm('¿Eliminar ${f.name}?')"
+                                       class="px-2 py-1.5 rounded-lg text-xs transition-colors"
+                                       style="background:#1a1a1a;border:1px solid var(--border);color:#555;">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                }
+            }
+        })
+        .catch(() => {});
+}
+
 // ─── Inicialización ──────────────────────────────────────────────────────────
 setupOCRUpload();
 renderVisualSchedule(currentSchedule);
 renderTableSchedule(currentSchedule);
 refreshStatus();
+refreshRealtimeFiles();
 refreshLogs();
-setInterval(refreshStatus, 10000);
-setInterval(refreshLogs, 5000);
+
+// Live Real-Time Timers
+setInterval(refreshRealtimeFiles, 3000); // Archivos en tiempo real cada 3s
+setInterval(refreshStatus, 8000);        // Servicios cada 8s
+setInterval(refreshLogs, 4000);          // Logs cada 4s
 
 (function(){ applyTheme(localStorage.getItem('chatosync-theme') || 'dark'); })();
 </script>
 </body>
 </html>
+
