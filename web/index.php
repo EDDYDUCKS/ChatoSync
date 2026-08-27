@@ -37,12 +37,12 @@ $uptime   = trim(shell_exec("uptime -p 2>/dev/null") ?? '—');
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ChatoSync Hub · Dashboard</title>
+<title>ChatoSync · ULSA Local-Hub</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src="https://cdn.rawgit.com/davidshimjs/qrcodejs/gh-pages/qrcode.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 :root {
     --red:   #dc2626;
     --red2:  #ef4444;
@@ -57,51 +57,6 @@ $uptime   = trim(shell_exec("uptime -p 2>/dev/null") ?? '—');
     --sidebar:#0d0d0d;
 }
 /* ── Light theme ── */
-[data-theme="light"] {
-    --card:  #ffffff;
-    --card2: #f0f0f0;
-    --border:#e0e0e0;
-    --bg:    #f5f5f5;
-    --text:  #111111;
-    --text2: #444444;
-    --muted: #888888;
-    --sidebar:#ffffff;
-}
-[data-theme="light"] body { background:var(--bg); color:var(--text); }
-[data-theme="light"] aside { background:var(--sidebar)!important; }
-[data-theme="light"] header { background:var(--bg)!important; }
-[data-theme="light"] .kpi-red { text-shadow:none; color:#dc2626; }
-*{box-sizing:border-box;}
-body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .25s,color .25s;}
-
-/* Scrollbar */
-::-webkit-scrollbar{width:5px;height:5px;} ::-webkit-scrollbar-track{background:#111;} ::-webkit-scrollbar-thumb{background:#333;border-radius:9px;}
-/* Pulse red */
-@keyframes pulseRed{0%{box-shadow:0 0 0 0 rgba(220,38,38,.6);}70%{box-shadow:0 0 0 8px rgba(220,38,38,0);}100%{box-shadow:0 0 0 0 rgba(220,38,38,0);}}
-@keyframes pulseGreen{0%{box-shadow:0 0 0 0 rgba(34,197,94,.5);}70%{box-shadow:0 0 0 7px rgba(34,197,94,0);}100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}}
-.pulse-red{animation:pulseRed 2s infinite;}
-.pulse-green{animation:pulseGreen 2s infinite;}
-/* Metric glow */
-.kpi-red{text-shadow:0 0 20px rgba(220,38,38,.5);}
-/* Tabs */
-.tab-btn{transition:all .2s;}
-.tab-btn.active{background:var(--red);color:#fff;border-color:var(--red);}
-/* Drop */
-#dropZoneOCR.drag-over{border-color:var(--red)!important;background:var(--redbg)!important;}
-/* Tooltip */
-[data-tip]{position:relative;} [data-tip]:hover::after{content:attr(data-tip);position:absolute;bottom:110%;left:50%;transform:translateX(-50%);background:#222;color:#fff;font-size:10px;padding:3px 8px;border-radius:4px;white-space:nowrap;z-index:50;border:1px solid #333;}
-/* Fade in */
-@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
-.fade-up{animation:fadeUp .35s ease both;}
-/* Table hover */
-.trow:hover{background:rgba(220,38,38,.06);}
-/* Progress ring */
-.ring-track{fill:none;stroke:#222;stroke-width:4;}
-.ring-fill{fill:none;stroke:var(--red);stroke-width:4;stroke-linecap:round;transform:rotate(-90deg);transform-origin:50%;transition:stroke-dashoffset .6s ease;}
-
-/* ══════════════════════════════════════════════════
-   LIGHT THEME — overrides Tailwind & hardcoded CSS
-══════════════════════════════════════════════════ */
 [data-theme="light"] {
     --card:    #ffffff;
     --card2:   #f1f5f9;
@@ -140,7 +95,6 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 [data-theme="light"] [style*="color:#555"] { color: #475569 !important; }
 
 /* Structural backgrounds */
-[data-theme="light"] aside,
 [data-theme="light"] #sidebar { background: #ffffff !important; border-color: #e2e8f0 !important; }
 [data-theme="light"] header  { background: #ffffff !important; border-color: #e2e8f0 !important; }
 
@@ -160,23 +114,33 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
 
 /* Inputs y textareas */
 [data-theme="light"] input,
-[data-theme="light"] textarea { background: #f8fafc !important; border-color: #cbd5e1 !important; color: #0f172a !important; }
+[data-theme="light"] textarea,
+[data-theme="light"] select { background: #f8fafc !important; border-color: #cbd5e1 !important; color: #0f172a !important; }
 
-/* Drop zones OCR */
+/* Drop zones */
 [data-theme="light"] #dropZoneOCR,
-[data-theme="light"] #dropZoneOCR2 { border-color: #cbd5e1 !important; }
+[data-theme="light"] #dropZoneTransfer { border-color: #cbd5e1 !important; }
 
-/* KPI numbers — sin glow en claro */
+/* KPI numbers */
 [data-theme="light"] .kpi-red { text-shadow: none !important; color: #dc2626 !important; }
 
-/* Tooltip */
-[data-theme="light"] [data-tip]:hover::after { background: #fff; color: #0f172a; border-color: #cbd5e1; }
+*{box-sizing:border-box;}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .25s,color .25s;}
 
-/* Scrollbar en tema claro */
-[data-theme="light"] ::-webkit-scrollbar-track { background: #f1f5f9; }
-[data-theme="light"] ::-webkit-scrollbar-thumb { background: #cbd5e1; }
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px;} ::-webkit-scrollbar-track{background:var(--card2);} ::-webkit-scrollbar-thumb{background:var(--border);border-radius:9px;}
+/* Animations */
+@keyframes pulseRed{0%{box-shadow:0 0 0 0 rgba(220,38,38,.6);}70%{box-shadow:0 0 0 8px rgba(220,38,38,0);}100%{box-shadow:0 0 0 0 rgba(220,38,38,0);}}
+@keyframes pulseGreen{0%{box-shadow:0 0 0 0 rgba(34,197,94,.5);}70%{box-shadow:0 0 0 7px rgba(34,197,94,0);}100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}}
+.pulse-red{animation:pulseRed 2s infinite;}
+.pulse-green{animation:pulseGreen 2s infinite;}
+.kpi-red{text-shadow:0 0 20px rgba(220,38,38,.5);}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.fade-up{animation:fadeUp .35s ease both;}
+.trow:hover{background:rgba(220,38,38,.06);}
+.themed-card{background:var(--card);border:1px solid var(--border);}
+.themed-sub{background:var(--card2);border:1px solid var(--border);}
 </style>
-
 </head>
 <body>
 
@@ -204,16 +168,15 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
         </button>
     </div>
 
-    <!-- Nav -->
+    <!-- Nav (4 clean pillars) -->
     <nav class="flex-1 py-4 space-y-0.5 px-2 overflow-y-auto">
         <?php
         $nav = [
-            ['panel-main',    'fa-gauge-high',      'Dashboard',         true],
-            ['panel-ocr',     'fa-wand-magic-sparkles','Horarios OCR',   false],
-            ['panel-transfer','fa-share-nodes',      'Transferencia',     false],
-            ['panel-mail',    'fa-envelope',         'Correo Local',      false],
-            ['panel-services','fa-server',           'Servicios',         false],
-            ['panel-logs',    'fa-terminal',         'Logs',              false],
+            ['panel-main',    'fa-gauge-high',          'Dashboard',       true],
+            ['panel-ocr',     'fa-wand-magic-sparkles',  'Horarios OCR',    false],
+            ['panel-transfer','fa-share-nodes',          'Transferencia',   false],
+            ['panel-services','fa-server',               'Servicios y Red', false],
+            ['panel-logs',    'fa-terminal',             'Logs',            false],
         ];
         foreach($nav as [$id,$icon,$label,$active]):?>
         <button onclick="showPanel('<?=$id?>'); toggleMobileSidebar(false);"
@@ -283,366 +246,348 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
         </div>
     </header>
 
+    <!-- ─── PANEL 1: DASHBOARD GENERAL ─────────────────────────────── -->
+    <section id="panel-main" class="panel p-4 md:p-6 space-y-6">
 
-
-    <!-- ─── PANEL: DASHBOARD ─────────────────────────────── -->
-    <section id="panel-main" class="panel p-6 space-y-6">
-
-        <!-- KPI Cards -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- KPI Cards (4 métricas clave) -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             <!-- Files -->
-            <div class="rounded-xl p-5 space-y-3 fade-up" style="background:var(--card);border:1px solid var(--border);">
+            <div class="rounded-xl p-4 md:p-5 space-y-2 md:space-y-3 fade-up themed-card">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold uppercase tracking-wider" style="color:#666;">Archivos en Hub</span>
-                    <i class="fa-solid fa-folder-open" style="color:var(--red);opacity:.8;"></i>
+                    <span class="text-[11px] md:text-xs font-semibold uppercase tracking-wider" style="color:#666;">Archivos en Hub</span>
+                    <i class="fa-solid fa-folder-open text-base" style="color:var(--red);"></i>
                 </div>
-                <div class="text-4xl font-black text-white kpi-red"><?=$totalFiles?></div>
-                <div class="text-xs" style="color:#555;"><?=fmtSize($totalSize)?> total · Samba + Web</div>
+                <div class="text-3xl md:text-4xl font-black text-white kpi-red"><?=$totalFiles?></div>
+                <div class="text-[11px]" style="color:#555;"><?=fmtSize($totalSize)?> total · Samba + Web</div>
             </div>
             <!-- Classes -->
-            <div class="rounded-xl p-5 space-y-3 fade-up" style="background:var(--card);border:1px solid var(--border);animation-delay:.05s">
+            <div class="rounded-xl p-4 md:p-5 space-y-2 md:space-y-3 fade-up themed-card" style="animation-delay:.05s">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold uppercase tracking-wider" style="color:#666;">Clases Detectadas</span>
-                    <i class="fa-solid fa-calendar-check" style="color:var(--red);opacity:.8;"></i>
+                    <span class="text-[11px] md:text-xs font-semibold uppercase tracking-wider" style="color:#666;">Clases en Horario</span>
+                    <i class="fa-solid fa-calendar-check text-base" style="color:var(--red);"></i>
                 </div>
-                <div class="text-4xl font-black text-white kpi-red"><?=$classCount?></div>
-                <div class="text-xs" style="color:#555;"><?=$lastProcessed?'Último: '.date('d/m H:i',$lastProcessed):'Sin horario procesado'?></div>
+                <div class="text-3xl md:text-4xl font-black text-white kpi-red" id="kpiClassCount"><?=$classCount?></div>
+                <div class="text-[11px]" style="color:#555;" id="kpiLastProc"><?=$lastProcessed?'Último: '.date('d/m H:i',$lastProcessed):'Sin horario'?></div>
             </div>
             <!-- Services -->
-            <div class="rounded-xl p-5 space-y-3 fade-up" style="background:var(--card);border:1px solid var(--border);animation-delay:.1s">
+            <div class="rounded-xl p-4 md:p-5 space-y-2 md:space-y-3 fade-up themed-card" style="animation-delay:.1s">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold uppercase tracking-wider" style="color:#666;">Servicios Activos</span>
-                    <i class="fa-solid fa-server" style="color:var(--red);opacity:.8;"></i>
+                    <span class="text-[11px] md:text-xs font-semibold uppercase tracking-wider" style="color:#666;">Servicios Activos</span>
+                    <span class="h-2 w-2 rounded-full pulse-green" style="background:#22c55e;"></span>
                 </div>
-                <div class="text-4xl font-black text-white kpi-red" id="kpiSvc">—</div>
-                <div class="text-xs" style="color:#555;">de 7 servicios en línea</div>
+                <div class="text-3xl md:text-4xl font-black text-white" style="color:#22c55e;" id="kpiServices">5/5</div>
+                <div class="text-[11px]" style="color:#555;">DNS, Samba, Web, CUPS, OCR</div>
             </div>
-            <!-- Red -->
-            <div class="rounded-xl p-5 space-y-3 fade-up" style="background:var(--card);border:1px solid var(--border);animation-delay:.15s">
+            <!-- Network -->
+            <div class="rounded-xl p-4 md:p-5 space-y-2 md:space-y-3 fade-up themed-card" style="animation-delay:.15s">
                 <div class="flex items-center justify-between">
-                    <span class="text-xs font-semibold uppercase tracking-wider" style="color:#666;">Red WLAN</span>
-                    <i class="fa-solid fa-wifi" style="color:var(--red);opacity:.8;"></i>
+                    <span class="text-[11px] md:text-xs font-semibold uppercase tracking-wider" style="color:#666;">Red WLAN</span>
+                    <i class="fa-solid fa-wifi text-base" style="color:var(--red);"></i>
                 </div>
-                <div class="text-4xl font-black text-white kpi-red">LAN</div>
-                <div class="text-xs" style="color:#555;">ULSA-Hub · Sin Internet</div>
+                <div class="text-3xl md:text-4xl font-black text-white">LAN</div>
+                <div class="text-[11px]" style="color:#555;">ULSA-Hub · Sin Internet</div>
             </div>
         </div>
 
-        <!-- Main Grid: Horario + Files recientes -->
-        <div class="grid grid-cols-1 xl:grid-cols-12 gap-5">
+        <!-- Fila central: Horario Rápido + Archivos Recientes -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            <!-- Horario de clases (7 cols) -->
-            <div class="xl:col-span-7 rounded-xl" style="background:var(--card);border:1px solid var(--border);">
-                <div class="flex items-center justify-between px-5 py-4 border-b" style="border-color:var(--border);">
-                    <div>
-                        <h3 class="text-sm font-bold text-white">Horario de Clases Extraído</h3>
-                        <p class="text-[11px] mt-0.5" style="color:#555;"><?=$classCount?> clases · Motor OCR Tesseract</p>
+            <!-- Horario Visual (2 cols) -->
+            <div class="lg:col-span-2 rounded-xl flex flex-col themed-card">
+                <div class="px-5 py-4 border-b flex items-center justify-between flex-wrap gap-2" style="border-color:var(--border);">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-sm" style="color:var(--red);"></i>
+                        <h3 class="text-sm font-bold text-white">Mi Horario Semanal</h3>
                     </div>
-                    <div class="flex gap-2">
-                        <button onclick="testSampleSchedule()"
-                                class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                    <div class="flex items-center gap-2">
+                        <button onclick="testSampleSchedule()" class="px-2.5 py-1 rounded-lg text-xs font-semibold"
                                 style="background:var(--redbg);border:1px solid rgba(220,38,38,.3);color:var(--red2);">
-                            <i class="fa-solid fa-flask-vial mr-1"></i>Probar muestra
+                            <i class="fa-solid fa-flask mr-1"></i>Probar Muestra
                         </button>
-                        <a href="download_ics.php"
-                           class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                           style="background:#1a1a1a;border:1px solid var(--border);color:#aaa;">
-                            <i class="fa-solid fa-calendar-plus mr-1"></i>.ICS
-                        </a>
+                        <button onclick="exportAndDownloadICS()" class="px-2.5 py-1 rounded-lg text-xs font-semibold text-white"
+                                style="background:var(--red);">
+                            <i class="fa-solid fa-calendar-plus mr-1"></i>Sincronizar .ICS
+                        </button>
                     </div>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-xs">
-                        <thead>
-                            <tr class="text-[10px] uppercase tracking-wider font-semibold" style="color:#555;border-bottom:1px solid var(--border);">
-                                <th class="px-5 py-3 text-left">Código</th>
-                                <th class="px-5 py-3 text-left">Asignatura</th>
-                                <th class="px-5 py-3 text-left">Día</th>
-                                <th class="px-5 py-3 text-left">Horario</th>
-                                <th class="px-5 py-3 text-left">Aula</th>
-                                <th class="px-5 py-3 text-left">Docente</th>
-                            </tr>
-                        </thead>
-                        <tbody id="scheduleTableBody" class="divide-y" style="border-color:var(--border);">
-                            <?php if(empty($lastSchedule)):?>
-                            <tr>
-                                <td colspan="6" class="px-5 py-10 text-center" style="color:#444;">
-                                    <i class="fa-solid fa-inbox text-3xl mb-2 block opacity-20"></i>
-                                    Sube un horario o pulsa "Probar muestra"
-                                </td>
-                            </tr>
-                            <?php else: foreach($lastSchedule as $c):?>
-                            <tr class="trow">
-                                <td class="px-5 py-3 font-mono font-bold text-xs" style="color:var(--red2);"><?=htmlspecialchars($c['codigo']??'—')?></td>
-                                <td class="px-5 py-3 font-medium text-white text-xs max-w-xs truncate"><?=htmlspecialchars($c['materia']??'—')?></td>
-                                <td class="px-5 py-3"><span class="px-2 py-0.5 rounded text-[11px] font-semibold" style="background:#1e1e1e;color:#ccc;"><?=htmlspecialchars($c['dia_completo']??$c['dia']??'—')?></span></td>
-                                <td class="px-5 py-3 font-mono text-[11px]" style="color:#aaa;"><?=htmlspecialchars($c['hora_inicio']??'—')?> – <?=htmlspecialchars($c['hora_fin']??'—')?></td>
-                                <td class="px-5 py-3"><span class="px-2 py-0.5 rounded text-[11px] font-bold" style="background:var(--redbg);color:var(--red2);border:1px solid rgba(220,38,38,.25);"><?=htmlspecialchars($c['aula']??'—')?></span></td>
-                                <td class="px-5 py-3 text-[11px]" style="color:#888;"><?=htmlspecialchars($c['docente']??'—')?></td>
-                            </tr>
-                            <?php endforeach; endif;?>
-                        </tbody>
-                    </table>
+
+                <!-- Cuadrícula visual semanal -->
+                <div class="p-4 overflow-x-auto flex-1">
+                    <div class="min-w-[600px] grid grid-cols-6 gap-2 text-center" id="visualTimetable">
+                        <!-- Cabeceras de días -->
+                        <div class="p-2 rounded-lg text-xs font-bold text-white themed-sub">Lunes</div>
+                        <div class="p-2 rounded-lg text-xs font-bold text-white themed-sub">Martes</div>
+                        <div class="p-2 rounded-lg text-xs font-bold text-white themed-sub">Miércoles</div>
+                        <div class="p-2 rounded-lg text-xs font-bold text-white themed-sub">Jueves</div>
+                        <div class="p-2 rounded-lg text-xs font-bold text-white themed-sub">Viernes</div>
+                        <div class="p-2 rounded-lg text-xs font-bold text-white themed-sub">Sábado</div>
+                        
+                        <!-- Columnas de clases inyectadas dinámicamente -->
+                        <div id="col-Lu" class="space-y-2 min-h-[140px] p-1.5 rounded-lg border border-dashed" style="border-color:var(--border);"></div>
+                        <div id="col-Ma" class="space-y-2 min-h-[140px] p-1.5 rounded-lg border border-dashed" style="border-color:var(--border);"></div>
+                        <div id="col-Mi" class="space-y-2 min-h-[140px] p-1.5 rounded-lg border border-dashed" style="border-color:var(--border);"></div>
+                        <div id="col-Ju" class="space-y-2 min-h-[140px] p-1.5 rounded-lg border border-dashed" style="border-color:var(--border);"></div>
+                        <div id="col-Vi" class="space-y-2 min-h-[140px] p-1.5 rounded-lg border border-dashed" style="border-color:var(--border);"></div>
+                        <div id="col-Sa" class="space-y-2 min-h-[140px] p-1.5 rounded-lg border border-dashed" style="border-color:var(--border);"></div>
+                    </div>
                 </div>
-                <!-- Upload inline -->
-                <div class="px-5 py-4 border-t" style="border-color:var(--border);">
-                    <div id="dropZoneOCR"
-                         class="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-all"
-                         style="border-color:#2a2a2a;"
-                         onclick="document.getElementById('fileInputOCR').click()">
-                        <input type="file" id="fileInputOCR" class="hidden" accept="image/*,.pdf">
-                        <i class="fa-solid fa-cloud-arrow-up text-xl mb-1" style="color:#444;"></i>
-                        <p class="text-xs" style="color:#555;">Arrastra tu horario PNG/JPG/PDF aquí para procesarlo</p>
-                    </div>
-                    <div id="ocrLoader" class="hidden mt-3 flex items-center gap-2 text-xs" style="color:var(--red2);">
-                        <i class="fa-solid fa-spinner fa-spin"></i> Procesando OCR con Tesseract...
-                    </div>
+
+                <!-- Mini drop zone para subir horario rápido -->
+                <div class="px-5 py-3 border-t flex items-center justify-between flex-wrap gap-2 text-xs" style="border-color:var(--border);">
+                    <span style="color:#666;"><i class="fa-solid fa-cloud-arrow-up mr-1 text-red-500"></i>¿Tienes un horario nuevo?</span>
+                    <button onclick="showPanel('panel-ocr')" class="font-semibold text-red-400 hover:underline">
+                        Subir imagen o PDF en Horarios OCR ➔
+                    </button>
                 </div>
             </div>
 
-            <!-- Archivos recientes (5 cols) -->
-            <div class="xl:col-span-5 rounded-xl" style="background:var(--card);border:1px solid var(--border);">
-                <div class="flex items-center justify-between px-5 py-4 border-b" style="border-color:var(--border);">
-                    <div>
-                        <h3 class="text-sm font-bold text-white">Archivos en el Hub</h3>
-                        <p class="text-[11px] mt-0.5" style="color:#555;"><?=$totalFiles?> archivos · <?=fmtSize($totalSize)?></p>
+            <!-- Archivos Recientes + QR (1 col) -->
+            <div class="rounded-xl flex flex-col justify-between themed-card">
+                <div>
+                    <div class="px-5 py-4 border-b flex items-center justify-between" style="border-color:var(--border);">
+                        <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-cloud-arrow-down mr-2" style="color:var(--red);"></i>Archivos en Hub</h3>
+                        <a href="/transfer.php" class="text-xs font-semibold text-red-400">Ver todos ➔</a>
                     </div>
-                    <a href="/transfer.php" class="text-xs font-semibold" style="color:var(--red2);">
-                        Ver todos <i class="fa-solid fa-arrow-right ml-1"></i>
-                    </a>
-                </div>
-                <div class="divide-y" style="border-color:var(--border);">
-                    <?php if(empty($hubFiles)):?>
-                    <div class="px-5 py-8 text-center text-xs" style="color:#444;">
-                        <i class="fa-solid fa-folder-open text-2xl mb-2 block opacity-20"></i>
-                        Hub vacío — Sube desde Transfer
-                    </div>
-                    <?php else: foreach(array_slice($hubFiles,0,8) as $f):
-                        $ext=strtolower(pathinfo($f['name'],PATHINFO_EXTENSION));?>
-                    <div class="flex items-center gap-3 px-5 py-2.5 hover:bg-white/5 transition-colors group">
-                        <span class="text-lg flex-shrink-0"><?=fmtIcon($ext)?></span>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-xs font-medium text-white truncate"><?=htmlspecialchars($f['name'])?></p>
-                            <p class="text-[10px]" style="color:#555;"><?=fmtSize($f['size'])?> · <?=date('d/m H:i',$f['date'])?></p>
+                    <div class="divide-y max-h-[300px] overflow-y-auto" style="border-color:var(--border);">
+                        <?php if(empty($hubFiles)):?>
+                        <div class="px-5 py-8 text-center text-xs" style="color:#444;">
+                            <i class="fa-solid fa-folder-open text-2xl mb-2 block opacity-20"></i>
+                            Hub vacío — Sube archivos desde Transfer
                         </div>
-                        <?php
-                        $previewableExts = ['pdf','png','jpg','jpeg','gif','webp','svg','mp4','webm','mp3','wav','ogg','txt','log','json','py','sh','md','csv'];
-                        $canPrev = in_array($ext, $previewableExts);
+                        <?php else: foreach(array_slice($hubFiles,0,6) as $f):
+                            $ext=strtolower(pathinfo($f['name'],PATHINFO_EXTENSION));
+                            $previewableExts = ['pdf','png','jpg','jpeg','gif','webp','svg','mp4','webm','mp3','wav','ogg','txt','log','json','py','sh','md','csv'];
+                            $canPrev = in_array($ext, $previewableExts);
                         ?>
-                        <div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <?php if ($canPrev): ?>
-                            <button type="button"
-                                    onclick="openPreview('<?=urlencode($f['name'])?>', '<?=$ext?>', '<?=htmlspecialchars(addslashes($f['name']))?>', '<?=fmtSize($f['size'])?>')"
-                                    class="text-xs px-2 py-1 rounded flex items-center gap-1"
-                                    style="background:var(--card2);color:var(--text);border:1px solid var(--border);"
-                                    title="Previsualizar">
-                                <i class="fa-solid fa-eye" style="color:var(--red2);"></i>
-                            </button>
-                            <?php endif; ?>
-                            <a href="/download.php?file=<?=urlencode($f['name'])?>"
-                               class="text-xs px-2 py-1 rounded"
-                               style="background:var(--redbg);color:var(--red2);"
-                               title="Descargar">
-                                <i class="fa-solid fa-download"></i>
-                            </a>
+                        <div class="flex items-center gap-3 px-5 py-2.5 hover:bg-white/5 transition-colors group">
+                            <span class="text-lg flex-shrink-0"><?=fmtIcon($ext)?></span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-medium text-white truncate"><?=htmlspecialchars($f['name'])?></p>
+                                <p class="text-[10px]" style="color:#555;"><?=fmtSize($f['size'])?> · <?=date('d/m H:i',$f['date'])?></p>
+                            </div>
+                            <div class="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <?php if ($canPrev): ?>
+                                <button type="button"
+                                        onclick="openPreview('<?=urlencode($f['name'])?>', '<?=$ext?>', '<?=htmlspecialchars(addslashes($f['name']))?>', '<?=fmtSize($f['size'])?>')"
+                                        class="text-xs px-2 py-1 rounded flex items-center gap-1"
+                                        style="background:var(--card2);color:var(--text);border:1px solid var(--border);"
+                                        title="Previsualizar">
+                                    <i class="fa-solid fa-eye" style="color:var(--red2);"></i>
+                                </button>
+                                <?php endif; ?>
+                                <a href="/download.php?file=<?=urlencode($f['name'])?>"
+                                   class="text-xs px-2 py-1 rounded"
+                                   style="background:var(--redbg);color:var(--red2);"
+                                   title="Descargar">
+                                    <i class="fa-solid fa-download"></i>
+                                </a>
+                            </div>
                         </div>
+                        <?php endforeach; endif;?>
                     </div>
-                    <?php endforeach; endif;?>
-
                 </div>
-                <!-- QR -->
+
+                <!-- QR Mini Compartir -->
                 <div class="px-5 py-4 border-t flex items-center gap-4" style="border-color:var(--border);">
                     <div class="bg-white p-1.5 rounded-lg flex-shrink-0" id="qrMini"></div>
                     <div>
                         <p class="text-xs font-semibold text-white">Escanea para compartir</p>
-                        <p class="text-[11px] mt-0.5" style="color:#555;">Conecta a <strong class="text-white">ULSA-Hub</strong> Wi-Fi y escanea</p>
+                        <p class="text-[11px] mt-0.5" style="color:#555;">Conecta a <strong class="text-white">ULSA-Hub</strong> Wi-Fi y comparte archivos a máxima velocidad</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Services row -->
-        <div class="rounded-xl" style="background:var(--card);border:1px solid var(--border);">
-            <div class="px-5 py-4 border-b flex items-center justify-between" style="border-color:var(--border);">
-                <h3 class="text-sm font-bold text-white">Estado de Servicios en Tiempo Real</h3>
-                <button onclick="refreshStatus()" class="text-xs" style="color:#555;" id="svcRefreshBtn">
-                    <i class="fa-solid fa-rotate"></i> Actualizar
-                </button>
+        <!-- Estado de Servicios (Barra compacta) -->
+        <div class="rounded-xl p-4 themed-card">
+            <div class="text-xs font-bold uppercase tracking-wider mb-3 text-white flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved" style="color:var(--red);"></i> Estado de Infraestructura ChatoSync
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-px" style="background:var(--border);" id="serviceCards">
-                <?php for($i=0;$i<7;$i++):?>
-                <div class="px-4 py-3 animate-pulse" style="background:var(--card);">
-                    <div class="h-2 rounded w-3/4 mb-2" style="background:#1e1e1e;"></div>
-                    <div class="h-4 rounded w-1/2" style="background:#1a1a1a;"></div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3" id="serviceBadges">
+                <div class="p-3 rounded-lg flex items-center justify-between themed-sub animate-pulse">
+                    <span class="text-xs" style="color:#777;">Cargando...</span>
                 </div>
-                <?php endfor;?>
             </div>
         </div>
-
     </section>
 
-    <!-- ─── PANEL: OCR ─────────────────────────────────────── -->
-    <section id="panel-ocr" class="panel p-6 space-y-6 hidden">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Upload -->
-            <div class="rounded-xl" style="background:var(--card);border:1px solid var(--border);">
-                <div class="px-5 py-4 border-b" style="border-color:var(--border);">
-                    <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-wand-magic-sparkles mr-2" style="color:var(--red);"></i>Motor OCR — Digitalización de Horarios</h3>
-                    <p class="text-xs mt-1" style="color:#555;">Sube tu horario ULSA (PNG, JPG, PDF). Tesseract extraerá las clases automáticamente.</p>
+    <!-- ─── PANEL 2: HORARIOS OCR INTELIGENTE ─────────────────────── -->
+    <section id="panel-ocr" class="panel p-4 md:p-6 space-y-6 hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Subir Horario (1 col) -->
+            <div class="rounded-xl p-5 space-y-4 themed-card">
+                <div>
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles" style="color:var(--red);"></i>
+                        Procesar Mi Horario
+                    </h3>
+                    <p class="text-xs mt-1" style="color:#555;">Sube tu captura de pantalla o foto del horario académico de la ULSA.</p>
                 </div>
-                <div class="p-5 space-y-4">
-                    <div id="dropZoneOCR2" class="border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all"
-                         style="border-color:#2a2a2a;"
-                         onclick="document.getElementById('fileInputOCR2').click()">
-                        <input type="file" id="fileInputOCR2" class="hidden" accept="image/*,.pdf">
-                        <i class="fa-solid fa-file-image text-4xl mb-3" style="color:#333;"></i>
-                        <p class="text-sm font-semibold text-white">Haz clic o arrastra tu horario aquí</p>
-                        <p class="text-xs mt-1" style="color:#555;">PNG, JPG, JPEG, PDF · hasta 20 MB</p>
+
+                <!-- Drop zone -->
+                <div id="dropZoneOCR" class="border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all relative"
+                     style="border-color:var(--border);">
+                    <input type="file" id="fileInputOCR" accept="image/*,.pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                    <div id="ocrPrompt" class="space-y-2 pointer-events-none">
+                        <i class="fa-solid fa-cloud-arrow-up text-3xl" style="color:var(--red2);"></i>
+                        <p class="text-xs font-semibold text-white">Toca aquí o arrastra tu imagen</p>
+                        <p class="text-[10px]" style="color:#555;">PNG, JPG, JPEG o PDF</p>
                     </div>
-                    <div id="ocrLoader2" class="hidden flex items-center gap-2 text-xs" style="color:var(--red2);">
-                        <i class="fa-solid fa-spinner fa-spin"></i> Procesando con Tesseract + 3 estrategias de parsing...
+                    <div id="ocrLoader" class="hidden space-y-2 pointer-events-none">
+                        <i class="fa-solid fa-circle-notch fa-spin text-2xl" style="color:var(--red);"></i>
+                        <p class="text-xs font-semibold text-white">Extrayendo clases con Tesseract...</p>
                     </div>
-                    <button onclick="testSampleSchedule2()"
-                            class="w-full py-3 rounded-xl text-sm font-semibold transition-all"
-                            style="background:var(--redbg);border:1px solid rgba(220,38,38,.3);color:var(--red2);">
-                        <i class="fa-solid fa-flask-vial mr-2"></i>Probar con Horario de Muestra ULSA
+                </div>
+
+                <div class="space-y-2">
+                    <button onclick="testSampleSchedule()" class="w-full py-2.5 rounded-xl text-xs font-bold transition-colors"
+                            style="background:var(--card2);border:1px solid var(--border);color:var(--text);">
+                        <i class="fa-solid fa-flask mr-2" style="color:var(--red2);"></i>Probar con Horario de Muestra
                     </button>
-                    <div class="p-3 rounded-xl text-xs space-y-1" style="background:#0d0d0d;border:1px solid var(--border);">
-                        <div class="font-semibold text-white flex items-center gap-1.5">
-                            <i class="fa-solid fa-folder-open" style="color:#f59e0b;"></i> Carpeta Samba (alternativa):
-                        </div>
-                        <code class="font-mono" style="color:var(--red2);">\\<?=$serverIP?>\hub\entrada</code>
+                    <button onclick="addClassRow()" class="w-full py-2.5 rounded-xl text-xs font-bold transition-colors"
+                            style="background:var(--card2);border:1px solid var(--border);color:var(--text);">
+                        <i class="fa-solid fa-plus mr-2 text-green-500"></i>Agregar Materia Manualmente
+                    </button>
+                </div>
+
+                <div class="p-3.5 rounded-xl text-[11px] space-y-1.5 themed-sub">
+                    <div class="font-bold text-white flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-info text-amber-500"></i> Sincronización Automática
                     </div>
+                    <p style="color:#666;">Al exportar se genera un archivo <strong class="text-white">.ics</strong> con repetición semanal hasta el final del cuatrimestre y alarmas 15 min antes de cada clase.</p>
                 </div>
             </div>
 
-            <!-- Resultado OCR -->
-            <div class="rounded-xl" style="background:var(--card);border:1px solid var(--border);">
-                <div class="px-5 py-4 border-b flex items-center justify-between" style="border-color:var(--border);">
-                    <h3 class="text-sm font-bold text-white">Resultado OCR</h3>
-                    <a href="download_ics.php" class="text-xs font-semibold px-3 py-1.5 rounded-lg"
-                       style="background:var(--redbg);border:1px solid rgba(220,38,38,.3);color:var(--red2);">
-                        <i class="fa-solid fa-calendar-plus mr-1"></i>Exportar .ICS
-                    </a>
+            <!-- Tabla de Clases Detectadas + Editor (2 cols) -->
+            <div class="lg:col-span-2 rounded-xl flex flex-col themed-card">
+                <div class="px-5 py-4 border-b flex items-center justify-between flex-wrap gap-2" style="border-color:var(--border);">
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-sm font-bold text-white">Clases Extraídas</h3>
+                        <span id="detectedCountBadge" class="text-xs px-2 py-0.5 rounded font-semibold"
+                              style="background:var(--redbg);color:var(--red2);">0 clases</span>
+                    </div>
+                    <button onclick="exportAndDownloadICS()" class="px-3.5 py-1.5 rounded-lg text-xs font-bold text-white flex items-center gap-1.5 shadow-lg"
+                            style="background:var(--red);">
+                        <i class="fa-solid fa-calendar-plus"></i>
+                        <span>📅 Sincronizar Calendario (.ICS)</span>
+                    </button>
                 </div>
-                <div class="overflow-auto p-2">
-                    <table class="w-full text-xs">
-                        <thead><tr class="text-[10px] uppercase" style="color:#555;">
-                            <th class="p-2 text-left">Código</th><th class="p-2 text-left">Asignatura</th>
-                            <th class="p-2 text-left">Día</th><th class="p-2 text-left">Hora</th>
-                            <th class="p-2 text-left">Aula</th>
-                        </tr></thead>
-                        <tbody id="ocrResultTable" class="divide-y" style="border-color:var(--border);">
-                            <tr><td colspan="5" class="p-8 text-center text-xs" style="color:#444;">Sin resultado OCR aún</td></tr>
+
+                <!-- Tabla editable -->
+                <div class="overflow-x-auto flex-1">
+                    <table class="w-full text-xs text-left">
+                        <thead class="uppercase font-semibold border-b" style="border-color:var(--border);background:#0d0d0d;color:#555;">
+                            <tr>
+                                <th class="px-4 py-3">Cód</th>
+                                <th class="px-4 py-3">Asignatura</th>
+                                <th class="px-4 py-3">Día</th>
+                                <th class="px-4 py-3">Horario</th>
+                                <th class="px-4 py-3">Aula</th>
+                                <th class="px-4 py-3">Docente</th>
+                                <th class="px-3 py-3 text-center">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ocrTableBody" class="divide-y" style="border-color:var(--border);">
+                            <tr>
+                                <td colspan="7" class="px-4 py-12 text-center text-xs" style="color:#555;">
+                                    <i class="fa-solid fa-wand-magic-sparkles text-2xl mb-2 block opacity-20"></i>
+                                    Sube tu horario a la izquierda para extraer automáticamente las materias
+                                </td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
-
-        <!-- Log OCR -->
-        <div class="rounded-xl" style="background:var(--card);border:1px solid var(--border);">
-            <div class="px-5 py-3 border-b flex items-center justify-between" style="border-color:var(--border);">
-                <h3 class="text-xs font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-terminal" style="color:var(--red);"></i>Consola de Actividad
-                </h3>
-                <button onclick="refreshLogs()" class="text-xs" style="color:#555;"><i class="fa-solid fa-rotate"></i></button>
-            </div>
-            <pre id="logViewer" class="p-4 text-xs font-mono h-52 overflow-y-auto whitespace-pre-wrap" style="color:#888;">Cargando registros...</pre>
-        </div>
     </section>
 
-    <!-- ─── PANEL: TRANSFER ────────────────────────────────── -->
-    <section id="panel-transfer" class="panel p-6 space-y-6 hidden">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- Upload -->
-            <div class="lg:col-span-2 rounded-xl" style="background:var(--card);border:1px solid var(--border);">
-                <div class="px-5 py-4 border-b" style="border-color:var(--border);">
-                    <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-share-nodes mr-2" style="color:var(--red);"></i>Transferir Archivos — Sin Internet</h3>
-                    <p class="text-xs mt-1" style="color:#555;">Todos los dispositivos en la red <strong class="text-white">ULSA-Hub</strong> pueden subir y descargar.</p>
+    <!-- ─── PANEL 3: TRANSFERENCIA DE ARCHIVOS (XENDER) ────────────── -->
+    <section id="panel-transfer" class="panel p-4 md:p-6 space-y-6 hidden">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+            <!-- Subir (2 cols) -->
+            <div class="md:col-span-2 rounded-xl p-5 space-y-4 themed-card">
+                <div>
+                    <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-cloud-arrow-up mr-2" style="color:var(--red);"></i>Subir al Hub Local</h3>
+                    <p class="text-xs mt-0.5" style="color:#555;">Cualquier archivo — todos en la red ULSA-Hub pueden descargarlo a 300+ Mbps sin internet.</p>
                 </div>
-                <div class="p-5">
-                    <form id="transferUploadForm" method="POST" action="transfer.php" enctype="multipart/form-data">
-                        <div id="dropZoneTransfer"
-                             class="border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all group"
-                             style="border-color:#2a2a2a;"
-                             onclick="document.getElementById('fileInputTransfer').click()">
-                            <input type="file" name="archivo" id="fileInputTransfer" class="hidden" onchange="previewTransfer(this)">
-                            <div id="transferDropContent">
-                                <i class="fa-solid fa-cloud-arrow-up text-4xl mb-3" style="color:#333;"></i>
-                                <p class="text-sm font-semibold text-white">Cualquier tipo de archivo</p>
-                                <p class="text-xs mt-1" style="color:#555;">ZIP, APK, ISO, Video, PDF, Instaladores...</p>
-                            </div>
-                            <div id="transferFilePreview" class="hidden">
-                                <i class="fa-solid fa-file-circle-check text-4xl mb-2" style="color:var(--red2);"></i>
-                                <p id="transferFileName" class="text-sm font-semibold text-white truncate"></p>
-                                <p id="transferFileSize" class="text-xs mt-0.5" style="color:#888;"></p>
-                            </div>
-                        </div>
-                        <div id="transferProgress" class="hidden mt-3 space-y-1">
-                            <div class="flex justify-between text-xs" style="color:#555;">
-                                <span>Subiendo al servidor...</span>
-                                <span id="transferPct">0%</span>
-                            </div>
-                            <div class="h-1.5 rounded-full" style="background:#1a1a1a;">
-                                <div id="transferBar" class="h-full rounded-full" style="width:0%;background:var(--red);transition:width .2s;"></div>
-                            </div>
-                        </div>
-                        <button type="button" id="transferSendBtn" onclick="doTransferUpload()"
-                                class="hidden mt-3 w-full py-3 rounded-xl text-sm font-bold text-white transition-all"
-                                style="background:var(--red);">
-                            <i class="fa-solid fa-rocket mr-2"></i>Enviar al Servidor
-                        </button>
-                    </form>
+
+                <div id="dropZoneTransfer" class="border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all relative"
+                     style="border-color:var(--border);" onclick="document.getElementById('fileInputTransfer').click()">
+                    <input type="file" id="fileInputTransfer" class="hidden" onchange="handleTransferFile(this)">
+                    <div id="transferDropContent" class="space-y-2 pointer-events-none">
+                        <i class="fa-solid fa-cloud-arrow-up text-4xl" style="color:var(--red2);"></i>
+                        <p class="text-sm font-semibold text-white">Toca aquí o arrastra tu archivo</p>
+                        <p class="text-xs" style="color:#555;">APK, ZIP, ISO, PDF, Video, Instaladores, etc.</p>
+                    </div>
+                    <div id="transferFilePreview" class="hidden space-y-1 pointer-events-none">
+                        <i class="fa-solid fa-file-circle-check text-3xl" style="color:var(--red2);"></i>
+                        <p id="transferFileName" class="text-sm font-semibold text-white"></p>
+                        <p id="transferFileSize" class="text-xs" style="color:#888;"></p>
+                    </div>
+                </div>
+
+                <div id="transferProgress" class="hidden space-y-1.5">
+                    <div class="flex justify-between text-xs font-mono" style="color:#666;">
+                        <span>Enviando al servidor...</span><span id="transferPct">0%</span>
+                    </div>
+                    <div class="h-1.5 rounded-full" style="background:var(--card2);">
+                        <div id="transferBar" class="h-full rounded-full" style="width:0%;background:var(--red);transition:width .2s;"></div>
+                    </div>
+                </div>
+
+                <button id="transferSendBtn" onclick="doTransferUpload()" class="hidden w-full py-3 rounded-xl text-xs font-bold text-white shadow-lg"
+                        style="background:var(--red);">
+                    <i class="fa-solid fa-rocket mr-2"></i>Enviar al Servidor
+                </button>
+
+                <div class="p-3 rounded-xl text-xs flex items-center justify-between themed-sub">
+                    <span style="color:#666;"><i class="fa-solid fa-folder-open mr-1.5 text-amber-500"></i>Acceso directo Windows Samba:</span>
+                    <code class="font-mono text-red-400">\\<?=$serverIP?>\hub</code>
                 </div>
             </div>
 
-            <!-- QR -->
-            <div class="rounded-xl flex flex-col items-center justify-center text-center p-6 space-y-4"
-                 style="background:var(--card);border:1px solid var(--border);">
-                <div class="text-xs font-bold uppercase tracking-wider" style="color:#555;">
-                    <i class="fa-solid fa-qrcode mr-1" style="color:var(--red);"></i>Escanea para acceder
+            <!-- QR Grande (1 col) -->
+            <div class="rounded-xl p-5 flex flex-col items-center justify-center text-center space-y-4 themed-card">
+                <div class="text-xs font-semibold uppercase tracking-wider" style="color:#666;">
+                    <i class="fa-solid fa-qrcode mr-1 text-red-500"></i>Escanea con tu celular
                 </div>
-                <div class="bg-white p-3 rounded-xl shadow-2xl">
+                <div class="bg-white p-3 rounded-2xl shadow-2xl">
                     <div id="qrTransfer"></div>
                 </div>
-                <p class="text-xs" style="color:#555;">Abre con la cámara del celular<br>estando en <strong class="text-white">ULSA-Hub</strong> Wi-Fi</p>
-                <code class="text-[10px] font-mono break-all" style="color:var(--red2);">http://<?=$serverIP?>/transfer.php</code>
-                <div class="w-full p-3 rounded-xl text-xs text-left space-y-1" style="background:#0d0d0d;border:1px solid var(--border);">
-                    <div class="font-semibold text-white mb-1">También desde Windows Explorer:</div>
-                    <code class="font-mono" style="color:var(--red2);">\\<?=$serverIP?>\hub</code>
-                </div>
+                <p class="text-xs" style="color:#666;">
+                    Conéctate al Wi-Fi <strong class="text-white">ULSA-Hub</strong> y escanea para transferir archivos
+                </p>
+                <code class="text-[11px] font-mono text-red-400">http://<?=$serverIP?>/transfer.php</code>
             </div>
         </div>
 
-        <!-- File List -->
-        <div class="rounded-xl" style="background:var(--card);border:1px solid var(--border);">
+        <!-- Lista completa de archivos -->
+        <div class="rounded-xl themed-card">
             <div class="px-5 py-4 border-b flex items-center justify-between" style="border-color:var(--border);">
-                <h3 class="text-sm font-bold text-white">
-                    Archivos Disponibles
-                    <span class="ml-2 text-xs px-2 py-0.5 rounded font-semibold" style="background:var(--redbg);color:var(--red2);"><?=$totalFiles?></span>
-                </h3>
-                <button onclick="location.reload()" class="text-xs" style="color:#555;"><i class="fa-solid fa-rotate"></i> Actualizar</button>
+                <h3 class="text-sm font-bold text-white">Todos los Archivos Disponibles (<?=count($hubFiles)?>)</h3>
+                <button onclick="location.reload()" class="text-xs text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-rotate mr-1"></i>Actualizar
+                </button>
             </div>
-            <?php if(empty($hubFiles)):?>
-            <div class="p-10 text-center text-xs" style="color:#444;">
-                <i class="fa-solid fa-inbox text-3xl mb-2 block opacity-20"></i>
-                Hub vacío — sube el primer archivo arriba
-            </div>
-            <?php else:?>
             <div class="divide-y" style="border-color:var(--border);">
-                <?php foreach($hubFiles as $f):
-                    $ext=strtolower(pathinfo($f['name'],PATHINFO_EXTENSION));?>
+                <?php if(empty($hubFiles)):?>
+                <div class="p-10 text-center text-xs" style="color:#444;">
+                    <i class="fa-solid fa-inbox text-3xl mb-2 block opacity-20"></i>
+                    No hay archivos en el Hub — sube el primero arriba
+                </div>
+                <?php else: foreach($hubFiles as $f):
+                    $ext = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
+                    $canPrev2 = in_array($ext, ['pdf','png','jpg','jpeg','gif','webp','svg','mp4','webm','mp3','wav','ogg','txt','log','json','py','sh','md','csv']);
+                ?>
                 <div class="flex items-center gap-3 px-5 py-3 hover:bg-white/5 transition-colors group">
                     <span class="text-xl"><?=fmtIcon($ext)?></span>
                     <div class="flex-1 min-w-0">
                         <p class="text-sm font-medium text-white truncate"><?=htmlspecialchars($f['name'])?></p>
                         <p class="text-[11px]" style="color:#555;"><?=fmtSize($f['size'])?> · <?=date('d/m/Y H:i',$f['date'])?></p>
                     </div>
-                    <?php
-                    $canPrev2 = in_array($ext, $previewableExts);
-                    ?>
-                    <div class="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div class="flex items-center gap-2">
                         <?php if ($canPrev2): ?>
                         <button type="button"
                                 onclick="openPreview('<?=urlencode($f['name'])?>', '<?=$ext?>', '<?=htmlspecialchars(addslashes($f['name']))?>', '<?=fmtSize($f['size'])?>')"
@@ -650,14 +595,14 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
                                 style="background:var(--card2);border:1px solid var(--border);color:var(--text);"
                                 title="Previsualizar">
                             <i class="fa-solid fa-eye" style="color:var(--red2);"></i>
-                            <span>Ver</span>
+                            <span class="hidden sm:inline">Ver</span>
                         </button>
                         <?php endif; ?>
                         <a href="/download.php?file=<?=urlencode($f['name'])?>"
-                           class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white flex items-center gap-1"
+                           class="px-3 py-1.5 rounded-lg text-xs font-semibold text-white flex items-center gap-1 shadow-sm"
                            style="background:var(--red);">
                             <i class="fa-solid fa-download"></i>
-                            <span>Descargar</span>
+                            <span class="hidden sm:inline">Descargar</span>
                         </a>
                         <a href="transfer.php?del=<?=urlencode($f['name'])?>"
                            onclick="return confirm('¿Eliminar <?=htmlspecialchars($f['name'])?>?')"
@@ -667,111 +612,21 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
                         </a>
                     </div>
                 </div>
-                <?php endforeach;?>
-            </div>
-            <?php endif;?>
-        </div>
-    </section>
-
-    <!-- ─── PANEL: CORREO ──────────────────────────────────── -->
-    <section id="panel-mail" class="panel p-6 space-y-6 hidden">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-            <!-- Info + para qué sirve -->
-            <div class="rounded-xl p-6 space-y-5" style="background:var(--card);border:1px solid var(--border);">
-                <div>
-                    <h3 class="text-sm font-bold text-white mb-1">
-                        <i class="fa-solid fa-envelope mr-2" style="color:var(--red);"></i>Correo Local Offline
-                    </h3>
-                    <p class="text-xs" style="color:#666;">Postfix + Dovecot · Dominio <code class="font-mono" style="color:var(--red2);">ulsa.local</code></p>
-                </div>
-
-                <div class="space-y-3">
-                    <div class="text-xs font-semibold uppercase tracking-wider" style="color:#555;">¿Para qué lo usamos?</div>
-                    <?php
-                    $uses = [
-                        ['fa-bell','Alerta pre-clase','Aviso automático 20 minutos antes de cada clase detectada por OCR'],
-                        ['fa-file-import','Notificación de archivos','Email cuando alguien sube un archivo al Hub de transferencia'],
-                        ['fa-calendar-check','Confirmación OCR','Correo con el horario extraído cuando el motor lo procesa'],
-                        ['fa-triangle-exclamation','Alertas del sistema','Errores críticos de servicios (Samba, Apache, DNS)'],
-                    ];
-                    foreach($uses as [$ico,$title,$desc]):?>
-                    <div class="flex gap-3 p-3 rounded-lg" style="background:#0d0d0d;border:1px solid var(--border);">
-                        <i class="fa-solid <?=$ico?> mt-0.5 flex-shrink-0" style="color:var(--red);font-size:13px;"></i>
-                        <div>
-                            <div class="text-xs font-semibold text-white"><?=$title?></div>
-                            <div class="text-[11px] mt-0.5" style="color:#666;"><?=$desc?></div>
-                        </div>
-                    </div>
-                    <?php endforeach;?>
-                </div>
-
-                <div class="p-3 rounded-xl space-y-2" style="background:#0d0d0d;border:1px solid var(--border);">
-                    <div class="text-xs font-semibold text-white">Configuración IMAP</div>
-                    <div class="font-mono text-[11px] space-y-0.5" style="color:#888;">
-                        <div>Servidor: <span style="color:var(--red2);"><?=$serverIP?></span></div>
-                        <div>IMAP: <span style="color:var(--red2);">143</span> · SMTP: <span style="color:var(--red2);">25</span></div>
-                        <div>Usuario: <span style="color:var(--red2);">importar@ulsa.local</span></div>
-                        <div>Contraseña: <span style="color:var(--red2);">1234</span></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Enviar correo de prueba -->
-            <div class="rounded-xl p-6 space-y-4" style="background:var(--card);border:1px solid var(--border);">
-                <h3 class="text-sm font-bold text-white">
-                    <i class="fa-solid fa-paper-plane mr-2" style="color:var(--red);"></i>Enviar Notificación de Prueba
-                </h3>
-                <div class="space-y-3">
-                    <div>
-                        <label class="text-xs font-semibold text-white block mb-1">Para:</label>
-                        <input type="email" id="mailTo" value="importar@ulsa.local"
-                               class="w-full px-3 py-2 rounded-lg text-sm text-white font-mono"
-                               style="background:#111;border:1px solid var(--border);outline:none;">
-                    </div>
-                    <div>
-                        <label class="text-xs font-semibold text-white block mb-1">Asunto:</label>
-                        <input type="text" id="mailSubject" value="[ChatoSync] Prueba de Notificación"
-                               class="w-full px-3 py-2 rounded-lg text-sm text-white"
-                               style="background:#111;border:1px solid var(--border);outline:none;">
-                    </div>
-                    <div>
-                        <label class="text-xs font-semibold text-white block mb-1">Mensaje:</label>
-                        <textarea id="mailBody" rows="4"
-                                  class="w-full px-3 py-2 rounded-lg text-sm text-white resize-none"
-                                  style="background:#111;border:1px solid var(--border);outline:none;">Hola, este es un correo de prueba del sistema ChatoSync. El servidor está funcionando correctamente en la red ULSA-Hub. IP: <?=$serverIP?></textarea>
-                    </div>
-                    <button onclick="sendTestMail()"
-                            class="w-full py-3 rounded-xl text-sm font-bold text-white"
-                            style="background:var(--red);">
-                        <i class="fa-solid fa-paper-plane mr-2"></i>Enviar Correo Local
-                    </button>
-                    <div id="mailResult" class="hidden text-xs p-3 rounded-lg"></div>
-                </div>
-
-                <!-- Cómo verificar -->
-                <div class="p-4 rounded-xl" style="background:#0d0d0d;border:1px solid var(--border);">
-                    <div class="text-xs font-semibold text-white mb-2">¿Cómo leo los correos?</div>
-                    <div class="text-[11px] space-y-1.5" style="color:#666;">
-                        <div><span class="text-white font-medium">Thunderbird / Outlook:</span> Conectar a IMAP <?=$serverIP?></div>
-                        <div><span class="text-white font-medium">Terminal en VM:</span></div>
-                        <code class="block font-mono text-[10px] p-2 rounded" style="background:#111;color:var(--red2);">su - importar -c "cat ~/Maildir/new/*"</code>
-                    </div>
-                </div>
+                <?php endforeach; endif;?>
             </div>
         </div>
     </section>
 
-    <!-- ─── PANEL: SERVICIOS ───────────────────────────────── -->
-    <section id="panel-services" class="panel p-6 space-y-6 hidden">
-        <div class="rounded-xl" style="background:var(--card);border:1px solid var(--border);">
+    <!-- ─── PANEL 4: SERVICIOS Y RED ─────────────────────────────── -->
+    <section id="panel-services" class="panel p-4 md:p-6 space-y-6 hidden">
+        <div class="rounded-xl themed-card">
             <div class="px-5 py-4 border-b flex items-center justify-between" style="border-color:var(--border);">
                 <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-server mr-2" style="color:var(--red);"></i>Estado Detallado de Servicios</h3>
                 <button onclick="refreshStatus()" class="text-xs px-3 py-1.5 rounded-lg" style="background:var(--redbg);color:var(--red2);">
                     <i class="fa-solid fa-rotate mr-1"></i>Refrescar
                 </button>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-px" style="background:var(--border);" id="serviceDetail">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px" style="background:var(--border);" id="serviceDetail">
                 <div class="p-6 animate-pulse" style="background:var(--card);">
                     <div class="h-3 rounded w-1/2 mb-2" style="background:#1e1e1e;"></div>
                     <div class="h-6 rounded w-1/3" style="background:#1a1a1a;"></div>
@@ -779,38 +634,48 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
             </div>
         </div>
 
-        <!-- Red info -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <?php
-            $netCards = [
-                ['192.168.137.1','Windows Laptop','Gateway / Hotspot ULSA-Hub','fa-laptop'],
-                ['192.168.137.102','Debian 13 VM','Servidor ChatoSync (tú)','fa-server'],
-                ['192.168.137.x','Dispositivos','Laptops y móviles conectados','fa-mobile-screen'],
-            ];
-            foreach($netCards as [$ip,$name,$desc,$ico]):?>
-            <div class="rounded-xl p-5 space-y-3" style="background:var(--card);border:1px solid var(--border);">
-                <i class="fa-solid <?=$ico?> text-xl" style="color:var(--red);"></i>
-                <div>
-                    <div class="text-lg font-black font-mono text-white"><?=$ip?></div>
-                    <div class="text-xs font-semibold text-white mt-0.5"><?=$name?></div>
-                    <div class="text-[11px] mt-1" style="color:#555;"><?=$desc?></div>
+        <!-- Topología de red -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="rounded-xl p-5 space-y-2 themed-card">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-mono text-red-400 font-bold">192.168.137.1</span>
+                    <i class="fa-solid fa-laptop text-slate-400"></i>
                 </div>
+                <div class="text-sm font-bold text-white">Laptop Anfitriona</div>
+                <div class="text-xs" style="color:#555;">Gateway / Hotspot Wi-Fi (ULSA-Hub)</div>
             </div>
-            <?php endforeach;?>
+            <div class="rounded-xl p-5 space-y-2 themed-card">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-mono text-green-400 font-bold">192.168.137.102</span>
+                    <i class="fa-solid fa-server text-green-400"></i>
+                </div>
+                <div class="text-sm font-bold text-white">Debian 13 VM (ChatoSync)</div>
+                <div class="text-xs" style="color:#555;">DNS, Samba, Web, CUPS, OCR Hub</div>
+            </div>
+            <div class="rounded-xl p-5 space-y-2 themed-card">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-mono text-amber-400 font-bold">192.168.137.x</span>
+                    <i class="fa-solid fa-mobile-screen text-amber-400"></i>
+                </div>
+                <div class="text-sm font-bold text-white">Clientes Conectados</div>
+                <div class="text-xs" style="color:#555;">Smartphones y Laptops en el aula</div>
+            </div>
         </div>
     </section>
 
-    <!-- ─── PANEL: LOGS ────────────────────────────────────── -->
-    <section id="panel-logs" class="panel p-6 hidden">
-        <div class="rounded-xl h-full" style="background:var(--card);border:1px solid var(--border);">
+    <!-- ─── PANEL 5: LOGS DEL SISTEMA ─────────────────────────────── -->
+    <section id="panel-logs" class="panel p-4 md:p-6 space-y-4 hidden">
+        <div class="rounded-xl themed-card">
             <div class="px-5 py-4 border-b flex items-center justify-between" style="border-color:var(--border);">
-                <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-terminal mr-2" style="color:var(--red);"></i>Consola de Actividad — chatosync.log</h3>
+                <h3 class="text-sm font-bold text-white"><i class="fa-solid fa-terminal mr-2" style="color:var(--red);"></i>Consola en Vivo — /var/log/chatosync.log</h3>
                 <button onclick="refreshLogs()" class="text-xs px-3 py-1.5 rounded-lg" style="background:var(--redbg);color:var(--red2);">
                     <i class="fa-solid fa-rotate mr-1"></i>Actualizar
                 </button>
             </div>
-            <pre id="logViewerFull" class="p-5 text-xs font-mono min-h-96 overflow-y-auto whitespace-pre-wrap" style="color:#888;">Cargando...</pre>
+            <pre id="logViewerFull" class="p-5 text-xs font-mono min-h-[400px] overflow-y-auto whitespace-pre-wrap" style="color:#888;">Cargando logs...</pre>
         </div>
+    </section>
+
     <!-- ═══════════════════ MODAL DE PREVISUALIZACIÓN ═══════════════════ -->
     <div id="previewModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
         <div class="themed-card rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border"
@@ -838,283 +703,411 @@ body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-h
                 </div>
             </div>
             <!-- Modal Body Container -->
-            <div id="modalBody" class="p-4 overflow-y-auto flex-1 flex flex-col items-center justify-center min-h-[300px]">
-                <!-- Contenido dinámico inyectado por openPreview() -->
-            </div>
+            <div id="modalBody" class="p-4 overflow-y-auto flex-1 flex flex-col items-center justify-center min-h-[300px]"></div>
         </div>
     </div>
 
-</div><!-- /ml-56 -->
-
+</div><!-- /main content -->
 
 <script>
-// ─── QR Codes ────────────────────────────────────────────────────────────────
+// ─── Variables Globales ───────────────────────────────────────────────────────
 const serverIP = '<?=$serverIP?>';
-const transferURL = 'http://'+serverIP+'/transfer.php';
+const transferURL = 'http://' + serverIP + '/transfer.php';
+let currentSchedule = <?=json_encode($lastSchedule, JSON_UNESCAPED_UNICODE)?> || [];
 
+// ─── QR Codes ────────────────────────────────────────────────────────────────
 if(document.getElementById('qrMini')){
     new QRCode(document.getElementById('qrMini'),{text:transferURL,width:80,height:80,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
 }
 if(document.getElementById('qrTransfer')){
-    new QRCode(document.getElementById('qrTransfer'),{text:transferURL,width:180,height:180,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
+    new QRCode(document.getElementById('qrTransfer'),{text:transferURL,width:160,height:160,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
 }
 
-// ─── Sidebar Navigation ──────────────────────────────────────────────────────
-const panels = document.querySelectorAll('.panel');
-const btnPrefix = 'btn-';
-const titles = {
-    'panel-main':'Dashboard General',
-    'panel-ocr':'Motor OCR · Horarios',
-    'panel-transfer':'Transferencia de Archivos',
-    'panel-mail':'Correo Local Offline',
-    'panel-services':'Estado de Servicios',
-    'panel-logs':'Consola de Logs',
-};
+// ─── Navegación de Paneles ───────────────────────────────────────────────────
+function showPanel(panelId) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.add('hidden'));
+    const target = document.getElementById(panelId);
+    if(target) target.classList.remove('hidden');
 
-function showPanel(id){
-    panels.forEach(p=>{p.classList.add('hidden');});
-    document.getElementById(id).classList.remove('hidden');
-    document.getElementById('pageTitle').innerText = titles[id]||id;
-    document.querySelectorAll('.sidebar-btn').forEach(b=>{
-        b.style.background='';b.style.borderColor='transparent';b.style.color='#888';
-        b.querySelector('i').style.color='#555';
+    document.querySelectorAll('.sidebar-btn').forEach(btn => {
+        btn.style.color = '#888';
+        btn.style.background = '';
+        btn.style.borderColor = 'transparent';
+        const icon = btn.querySelector('i');
+        if(icon) icon.style.color = '#555';
     });
-    const btn=document.getElementById(btnPrefix+id);
-    if(btn){
-        btn.style.background='var(--redbg)';
-        btn.style.borderColor='rgba(220,38,38,.3)';
-        btn.style.color='#fff';
-        btn.querySelector('i').style.color='var(--red)';
+
+    const activeBtn = document.getElementById('btn-' + panelId);
+    if(activeBtn) {
+        activeBtn.style.color = '#fff';
+        activeBtn.style.background = 'var(--redbg)';
+        activeBtn.style.borderColor = 'rgba(220,38,38,0.3)';
+        const icon = activeBtn.querySelector('i');
+        if(icon) icon.style.color = 'var(--red)';
     }
-    if(id==='panel-logs') refreshLogsAll();
+
+    const titles = {
+        'panel-main': 'Dashboard General',
+        'panel-ocr': 'Horarios OCR & Calendario Inteligente',
+        'panel-transfer': 'Hub de Transferencia de Archivos',
+        'panel-services': 'Infraestructura y Servicios',
+        'panel-logs': 'Consola de Actividad del Sistema'
+    };
+    const titleEl = document.getElementById('pageTitle');
+    if(titleEl) titleEl.innerText = titles[panelId] || 'ChatoSync';
 }
 
-// ─── Service Status ───────────────────────────────────────────────────────────
-const svcNames = {
-    dns:'DNS BIND9',mail_smtp:'SMTP (Postfix)',mail_imap:'IMAP Dovecot',
-    samba:'Samba / SMB',web:'Apache Web',cups:'CUPS Impresión',ocr:'ChatoSync OCR'
-};
-function refreshStatus(){
-    fetch('api.php?action=status').then(r=>r.json()).then(d=>{
-        if(d.status!=='ok') return;
-        const svcs=d.services;
-        let active=Object.values(svcs).filter(s=>s.active).length;
-        const kpi=document.getElementById('kpiSvc');
-        if(kpi) kpi.innerText=active;
-
-        // Cards mini (dashboard)
-        const sc=document.getElementById('serviceCards');
-        if(sc){
-            sc.innerHTML=Object.entries(svcs).map(([k,s])=>`
-                <div class="px-4 py-3" style="background:var(--card);">
-                    <div class="text-[10px] font-semibold mb-1.5 truncate" style="color:#666;">${s.name}</div>
-                    <div class="flex items-center justify-between">
-                        <span class="text-xs font-bold" style="color:${s.active?'#22c55e':'var(--red2)'};">${s.active?'ACTIVO':'INACTIVO'}</span>
-                        <span class="h-2 w-2 rounded-full ${s.active?'pulse-green':'pulse-red'}" style="background:${s.active?'#22c55e':'var(--red)'}"></span>
-                    </div>
-                </div>`).join('');
-        }
-
-        // Detail panel
-        const sd=document.getElementById('serviceDetail');
-        if(sd){
-            sd.innerHTML=Object.entries(svcs).map(([k,s])=>`
-                <div class="p-5 space-y-2" style="background:var(--card);">
-                    <div class="flex items-center justify-between">
-                        <span class="text-sm font-semibold text-white">${s.name}</span>
-                        <span class="h-2.5 w-2.5 rounded-full ${s.active?'pulse-green':'pulse-red'}" style="background:${s.active?'#22c55e':'var(--red)'}"></span>
-                    </div>
-                    <div class="text-xs font-bold" style="color:${s.active?'#22c55e':'var(--red2)'};">${s.active?'✓ Activo y corriendo':'✗ Inactivo / Error'}</div>
-                    <div class="text-[10px] font-mono" style="color:#555;">systemctl: ${k}</div>
-                </div>`).join('');
-        }
+// ─── Renderizado de Horario (Cuadrícula Visual + Tabla Editable) ──────────────
+function renderVisualSchedule(clases) {
+    // Limpiar columnas
+    ['Lu','Ma','Mi','Ju','Vi','Sa'].forEach(d => {
+        const col = document.getElementById('col-' + d);
+        if(col) col.innerHTML = '';
     });
+
+    const colores = {
+        '0808': { bg: 'rgba(239, 68, 68, 0.15)', border: 'rgba(239, 68, 68, 0.4)', text: '#ef4444' },
+        '0305': { bg: 'rgba(59, 130, 246, 0.15)', border: 'rgba(59, 130, 246, 0.4)', text: '#3b82f6' },
+        '0303': { bg: 'rgba(16, 185, 129, 0.15)', border: 'rgba(16, 185, 129, 0.4)', text: '#10b981' },
+        '0603': { bg: 'rgba(245, 158, 11, 0.15)', border: 'rgba(245, 158, 11, 0.4)', text: '#f59e0b' },
+    };
+
+    if(!clases || !clases.length) return;
+
+    clases.forEach((c, idx) => {
+        const dia = c.dia || 'Lu';
+        const col = document.getElementById('col-' + dia);
+        if(!col) return;
+
+        const colInfo = colores[c.codigo] || { bg: 'rgba(168, 85, 247, 0.15)', border: 'rgba(168, 85, 247, 0.4)', text: '#a855f7' };
+        const card = document.createElement('div');
+        card.className = 'p-2.5 rounded-lg text-left shadow-sm transition-all hover:scale-[1.02] cursor-pointer';
+        card.style.background = colInfo.bg;
+        card.style.border = '1px solid ' + colInfo.border;
+        card.innerHTML = `
+            <div class="flex items-center justify-between text-[10px] font-mono font-bold mb-1">
+                <span style="color:${colInfo.text};">[${c.codigo}]</span>
+                <span class="px-1.5 py-0.5 rounded text-[9px] bg-black/40 text-white font-bold">${c.aula}</span>
+            </div>
+            <div class="text-xs font-bold text-white leading-tight mb-1 truncate" title="${c.materia}">${c.materia}</div>
+            <div class="text-[10px] font-mono" style="color:#aaa;">${c.hora_inicio} - ${c.hora_fin}</div>
+            <div class="text-[9px] truncate mt-0.5" style="color:#777;">${c.docente || ''}</div>
+        `;
+        col.appendChild(card);
+    });
+
+    // Actualizar KPI
+    const kpiCount = document.getElementById('kpiClassCount');
+    if(kpiCount) kpiCount.textContent = clases.length;
 }
 
-// ─── Logs ─────────────────────────────────────────────────────────────────────
-function refreshLogs(){
-    fetch('api.php?action=logs').then(r=>r.json()).then(d=>{
-        const v=document.getElementById('logViewer');
-        if(v&&d.status==='ok'){v.innerText=d.logs;v.scrollTop=v.scrollHeight;}
-    });
-}
-function refreshLogsAll(){
-    fetch('api.php?action=logs').then(r=>r.json()).then(d=>{
-        const v=document.getElementById('logViewerFull');
-        if(v&&d.status==='ok'){v.innerText=d.logs;v.scrollTop=v.scrollHeight;}
-    });
-}
-
-// ─── OCR Upload (dashboard dropzone) ─────────────────────────────────────────
-function setupOCRDrop(dropId,inputId,loaderId,resultTbody){
-    const drop=document.getElementById(dropId);
-    const inp=document.getElementById(inputId);
-    if(!drop||!inp) return;
-    inp.addEventListener('change',e=>{if(e.target.files[0]) ocrUpload(e.target.files[0],loaderId,resultTbody);});
-    drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('drag-over');});
-    drop.addEventListener('dragleave',()=>drop.classList.remove('drag-over'));
-    drop.addEventListener('drop',e=>{
-        e.preventDefault();drop.classList.remove('drag-over');
-        if(e.dataTransfer.files[0]) ocrUpload(e.dataTransfer.files[0],loaderId,resultTbody);
-    });
-}
-
-function ocrUpload(file,loaderId,resultTbody){
-    document.getElementById(loaderId).classList.remove('hidden');
-    const fd=new FormData();fd.append('action','upload');fd.append('horario',file);
-    fetch('api.php',{method:'POST',body:fd}).then(r=>r.json()).then(res=>{
-        document.getElementById(loaderId).classList.add('hidden');
-        if(res.status==='ok') renderSchedule(res.clases,resultTbody);
-        else alert(res.message||'Error al procesar');
-        refreshLogs();
-    });
-}
-
-function renderSchedule(clases,tbodyId='scheduleTableBody'){
-    const tbody=document.getElementById(tbodyId);
+function renderTableSchedule(clases) {
+    const tbody = document.getElementById('ocrTableBody');
     if(!tbody) return;
-    if(!clases||!clases.length){
-        tbody.innerHTML='<tr><td colspan="6" class="p-8 text-center text-xs" style="color:#444;">No se detectaron clases válidas.</td></tr>';
+
+    if(!clases || !clases.length) {
+        tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-8 text-center text-xs" style="color:#555;">No hay clases detectadas</td></tr>`;
         return;
     }
-    tbody.innerHTML=clases.map(c=>`
-        <tr class="trow">
-            <td class="px-5 py-3 font-mono font-bold text-xs" style="color:var(--red2);">${c.codigo||'—'}</td>
-            <td class="px-5 py-3 font-medium text-white text-xs">${c.materia||'—'}</td>
-            <td class="px-5 py-3"><span class="px-2 py-0.5 rounded text-[11px] font-semibold" style="background:#1e1e1e;color:#ccc;">${c.dia_completo||c.dia||'—'}</span></td>
-            <td class="px-5 py-3 font-mono text-[11px]" style="color:#aaa;">${c.hora_inicio||'—'} – ${c.hora_fin||'—'}</td>
-            <td class="px-5 py-3"><span class="px-2 py-0.5 rounded text-[11px] font-bold" style="background:var(--redbg);color:var(--red2);border:1px solid rgba(220,38,38,.25);">${c.aula||'—'}</span></td>
-            <td class="px-5 py-3 text-[11px]" style="color:#888;">${c.docente||'—'}</td>
-        </tr>`).join('');
-    // Sync both tables
-    ['scheduleTableBody','ocrResultTable'].forEach(id=>{
-        const t=document.getElementById(id);
-        if(t&&t.id!==tbodyId) t.innerHTML=tbody.innerHTML;
+
+    tbody.innerHTML = '';
+    clases.forEach((c, i) => {
+        const tr = document.createElement('tr');
+        tr.className = 'trow transition-colors';
+        tr.innerHTML = `
+            <td class="px-4 py-2.5 font-mono font-bold text-red-400">
+                <input type="text" value="${c.codigo}" onchange="updateClassField(${i},'codigo',this.value)" class="w-14 bg-transparent border-b border-transparent focus:border-red-500 font-mono text-xs text-red-400">
+            </td>
+            <td class="px-4 py-2.5 font-semibold text-white">
+                <input type="text" value="${c.materia}" onchange="updateClassField(${i},'materia',this.value)" class="w-full bg-transparent border-b border-transparent focus:border-red-500 text-xs font-semibold text-white">
+            </td>
+            <td class="px-4 py-2.5">
+                <select onchange="updateClassField(${i},'dia',this.value)" class="bg-transparent border border-neutral-700 rounded px-1.5 py-0.5 text-xs text-white">
+                    <option value="Lu" ${c.dia==='Lu'?'selected':''}>Lunes</option>
+                    <option value="Ma" ${c.dia==='Ma'?'selected':''}>Martes</option>
+                    <option value="Mi" ${c.dia==='Mi'?'selected':''}>Miércoles</option>
+                    <option value="Ju" ${c.dia==='Ju'?'selected':''}>Jueves</option>
+                    <option value="Vi" ${c.dia==='Vi'?'selected':''}>Viernes</option>
+                    <option value="Sa" ${c.dia==='Sa'?'selected':''}>Sábado</option>
+                </select>
+            </td>
+            <td class="px-4 py-2.5 font-mono text-slate-300">
+                <input type="text" value="${c.hora_inicio} - ${c.hora_fin}" onchange="updateClassHours(${i},this.value)" class="w-36 bg-transparent border-b border-transparent focus:border-red-500 font-mono text-xs text-slate-300">
+            </td>
+            <td class="px-4 py-2.5">
+                <input type="text" value="${c.aula}" onchange="updateClassField(${i},'aula',this.value)" class="w-20 bg-transparent border-b border-transparent focus:border-red-500 font-bold text-xs text-white">
+            </td>
+            <td class="px-4 py-2.5 text-slate-400 truncate max-w-[140px]">
+                <input type="text" value="${c.docente}" onchange="updateClassField(${i},'docente',this.value)" class="w-full bg-transparent border-b border-transparent focus:border-red-500 text-xs text-slate-400">
+            </td>
+            <td class="px-3 py-2.5 text-center">
+                <button onclick="deleteClassRow(${i})" class="text-slate-500 hover:text-red-400 transition-colors p-1" title="Eliminar fila">
+                    <i class="fa-solid fa-trash text-xs"></i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    const badge = document.getElementById('detectedCountBadge');
+    if(badge) badge.textContent = clases.length + ' clases';
+}
+
+function updateClassField(index, field, value) {
+    if(currentSchedule[index]) {
+        currentSchedule[index][field] = value;
+        renderVisualSchedule(currentSchedule);
+    }
+}
+
+function updateClassHours(index, value) {
+    if(currentSchedule[index]) {
+        const parts = value.split('-');
+        if(parts.length === 2) {
+            currentSchedule[index].hora_inicio = parts[0].trim();
+            currentSchedule[index].hora_fin = parts[1].trim();
+            renderVisualSchedule(currentSchedule);
+        }
+    }
+}
+
+function addClassRow() {
+    currentSchedule.push({
+        codigo: '0000',
+        materia: 'Nueva Materia',
+        dia: 'Lu',
+        dia_completo: 'Lunes',
+        hora_inicio: '01:00 pm',
+        hora_fin: '02:40 pm',
+        aula: 'G105',
+        docente: 'Docente Asignado'
+    });
+    renderVisualSchedule(currentSchedule);
+    renderTableSchedule(currentSchedule);
+}
+
+function deleteClassRow(index) {
+    currentSchedule.splice(index, 1);
+    renderVisualSchedule(currentSchedule);
+    renderTableSchedule(currentSchedule);
+}
+
+function exportAndDownloadICS() {
+    if(!currentSchedule || !currentSchedule.length) {
+        alert('No hay materias en el horario para exportar.');
+        return;
+    }
+
+    fetch('api.php?action=export_ics', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentSchedule)
+    })
+    .then(r => r.json())
+    .then(data => {
+        if(data.status === 'ok') {
+            // Iniciar descarga automática del .ics
+            const a = document.createElement('a');
+            a.href = data.ics_url || '/download.php?file=horario_ulsa.ics';
+            a.download = 'horario_ulsa.ics';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            alert('✓ Calendario generado con éxito con recurrencia para todo el cuatrimestre y alarmas automáticas.');
+        } else {
+            alert('Error al generar calendario: ' + (data.message || 'Error'));
+        }
+    })
+    .catch(() => {
+        window.location.href = '/download.php?file=horario_ulsa.ics';
     });
 }
 
-function testSampleSchedule(){testSample('scheduleTableBody','ocrLoader');}
-function testSampleSchedule2(){testSample('ocrResultTable','ocrLoader2');}
-function testSample(tbodyId,loaderId){
-    const l=document.getElementById(loaderId);
-    if(l) l.classList.remove('hidden');
-    fetch('api.php?action=test_sample').then(r=>r.json()).then(res=>{
-        if(l) l.classList.add('hidden');
-        if(res.status==='ok') renderSchedule(res.clases,tbodyId);
-        else alert(res.message);
-        refreshLogs();
+function testSampleSchedule() {
+    const loader = document.getElementById('ocrLoader');
+    const prompt = document.getElementById('ocrPrompt');
+    if(loader) loader.classList.remove('hidden');
+    if(prompt) prompt.classList.add('hidden');
+
+    fetch('api.php?action=test_sample')
+        .then(r => r.json())
+        .then(d => {
+            if(loader) loader.classList.add('hidden');
+            if(prompt) prompt.classList.remove('hidden');
+            if(d.status === 'ok' && d.clases && d.clases.length) {
+                currentSchedule = d.clases;
+                renderVisualSchedule(currentSchedule);
+                renderTableSchedule(currentSchedule);
+                alert('✓ Horario de muestra procesado: se detectaron ' + d.clases.length + ' clases.');
+            } else {
+                alert('No se pudieron extraer clases de la muestra.');
+            }
+        })
+        .catch(err => {
+            if(loader) loader.classList.add('hidden');
+            if(prompt) prompt.classList.remove('hidden');
+            alert('Error de conexión con el motor OCR.');
+        });
+}
+
+// ─── Subida de Horarios (Drag & Drop) ─────────────────────────────────────────
+function setupOCRUpload() {
+    const drop = document.getElementById('dropZoneOCR');
+    const fileInp = document.getElementById('fileInputOCR');
+    if(!drop || !fileInp) return;
+
+    drop.addEventListener('dragover', e => { e.preventDefault(); drop.style.borderColor = 'var(--red)'; });
+    drop.addEventListener('dragleave', () => { drop.style.borderColor = 'var(--border)'; });
+    drop.addEventListener('drop', e => {
+        e.preventDefault();
+        drop.style.borderColor = 'var(--border)';
+        if(e.dataTransfer.files[0]) {
+            fileInp.files = e.dataTransfer.files;
+            processOCRFile(e.dataTransfer.files[0]);
+        }
+    });
+    fileInp.addEventListener('change', () => {
+        if(fileInp.files[0]) processOCRFile(fileInp.files[0]);
     });
 }
 
-// ─── Transfer Upload ──────────────────────────────────────────────────────────
-function previewTransfer(input){
-    if(!input.files.length) return;
-    const file=input.files[0];
+function processOCRFile(file) {
+    const loader = document.getElementById('ocrLoader');
+    const prompt = document.getElementById('ocrPrompt');
+    if(loader) loader.classList.remove('hidden');
+    if(prompt) prompt.classList.add('hidden');
+
+    const fd = new FormData();
+    fd.append('horario', file);
+
+    fetch('api.php?action=upload', { method: 'POST', body: fd })
+        .then(r => r.json())
+        .then(d => {
+            if(loader) loader.classList.add('hidden');
+            if(prompt) prompt.classList.remove('hidden');
+            if(d.status === 'ok' && d.clases && d.clases.length) {
+                currentSchedule = d.clases;
+                renderVisualSchedule(currentSchedule);
+                renderTableSchedule(currentSchedule);
+                alert('✓ Horario procesado con éxito: ' + d.clases.length + ' sesiones detectadas.');
+            } else {
+                alert('[-] No se detectaron patrones válidos en la imagen.');
+            }
+        })
+        .catch(() => {
+            if(loader) loader.classList.add('hidden');
+            if(prompt) prompt.classList.remove('hidden');
+            alert('Error al comunicarse con el servidor OCR.');
+        });
+}
+
+// ─── Transfer Drag & Drop ────────────────────────────────────────────────────
+function handleTransferFile(inp) {
+    if(!inp.files.length) return;
+    const f = inp.files[0];
     document.getElementById('transferDropContent').classList.add('hidden');
     document.getElementById('transferFilePreview').classList.remove('hidden');
-    document.getElementById('transferFileName').textContent=file.name;
-    const s=file.size;
-    document.getElementById('transferFileSize').textContent=s>=1048576?(s/1048576).toFixed(1)+' MB':s>=1024?(s/1024).toFixed(0)+' KB':s+' B';
+    document.getElementById('transferFileName').textContent = f.name;
+    const s = f.size;
+    document.getElementById('transferFileSize').textContent = s>=1048576?(s/1048576).toFixed(1)+' MB':s>=1024?(s/1024).toFixed(0)+' KB':s+' B';
     document.getElementById('transferSendBtn').classList.remove('hidden');
 }
-function doTransferUpload(){
-    const fi=document.getElementById('fileInputTransfer');
+
+function doTransferUpload() {
+    const fi = document.getElementById('fileInputTransfer');
     if(!fi.files.length) return;
-    const btn=document.getElementById('transferSendBtn');
-    btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin mr-2"></i>Enviando...';
-    const fd=new FormData(); fd.append('archivo',fi.files[0]);
-    const xhr=new XMLHttpRequest();
+    const btn = document.getElementById('transferSendBtn');
+    btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Enviando...';
+    const fd = new FormData(); fd.append('archivo', fi.files[0]);
+    const xhr = new XMLHttpRequest();
     document.getElementById('transferProgress').classList.remove('hidden');
-    xhr.upload.onprogress=e=>{
-        if(e.lengthComputable){
-            const p=Math.round(e.loaded/e.total*100);
-            document.getElementById('transferBar').style.width=p+'%';
-            document.getElementById('transferPct').textContent=p+'%';
+    xhr.upload.onprogress = e => {
+        if(e.lengthComputable) {
+            const p = Math.round(e.loaded/e.total*100);
+            document.getElementById('transferBar').style.width = p + '%';
+            document.getElementById('transferPct').textContent = p + '%';
         }
     };
-    xhr.onload=()=>{
+    xhr.onload = () => {
         try {
             const res = JSON.parse(xhr.responseText);
-            if(res.status === 'ok') {
-                location.reload();
-            } else {
+            if(res.status === 'ok') location.reload();
+            else {
                 alert(res.message || 'Error al subir archivo');
-                btn.disabled=false;
-                btn.innerHTML='<i class="fa-solid fa-rocket mr-2"></i>Enviar al Servidor';
+                btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-rocket mr-2"></i>Enviar al Servidor';
             }
-        } catch(e) {
-            location.reload();
-        }
+        } catch(e) { location.reload(); }
     };
-    xhr.open('POST','transfer.php',true);
+    xhr.open('POST', 'transfer.php', true);
     xhr.send(fd);
 }
 
+// ─── Monitoreo de Servicios & Logs ───────────────────────────────────────────
+function refreshStatus() {
+    fetch('api.php?action=status')
+        .then(r => r.json())
+        .then(d => {
+            if(d.status === 'ok') {
+                const s = d.services;
+                const badges = document.getElementById('serviceBadges');
+                const detail = document.getElementById('serviceDetail');
+                
+                let activeCount = 0;
+                let totalCount = Object.keys(s).length;
 
-// ─── Send Test Mail ───────────────────────────────────────────────────────────
-function sendTestMail(){
-    const to=document.getElementById('mailTo').value;
-    const sub=document.getElementById('mailSubject').value;
-    const body=document.getElementById('mailBody').value;
-    const res=document.getElementById('mailResult');
-    res.classList.remove('hidden');
-    res.style.background='var(--redbg)';res.style.borderColor='rgba(220,38,38,.3)';
-    res.style.color='var(--red2)';res.innerText='Enviando correo...';
-    fetch(`api.php?action=send_mail&to=${encodeURIComponent(to)}&subject=${encodeURIComponent(sub)}&body=${encodeURIComponent(body)}`)
-        .then(r=>r.json()).then(d=>{
-            if(d.status==='ok'){
-                res.style.background='rgba(34,197,94,.1)';res.style.borderColor='rgba(34,197,94,.3)';
-                res.style.color='#22c55e';res.innerText='✓ Correo enviado a '+to;
-            } else {
-                res.innerText='✗ '+d.message;
+                let bHtml = '';
+                let dHtml = '';
+
+                for(const [k, v] of Object.entries(s)) {
+                    if(v.active) activeCount++;
+                    const dotClass = v.active ? 'bg-green-500 pulse-green' : 'bg-red-500';
+                    const txtColor = v.active ? 'text-green-400' : 'text-red-400';
+                    const statusText = v.active ? 'Activo' : 'Inactivo';
+
+                    bHtml += `
+                        <div class="p-3 rounded-lg flex items-center justify-between themed-sub">
+                            <span class="text-xs font-medium text-white truncate pr-2">${v.name.split('(')[0]}</span>
+                            <span class="h-2 w-2 rounded-full ${dotClass} flex-shrink-0"></span>
+                        </div>
+                    `;
+
+                    dHtml += `
+                        <div class="p-5 flex items-center justify-between themed-card">
+                            <div>
+                                <div class="text-sm font-bold text-white">${v.name}</div>
+                                <div class="text-xs font-mono mt-1 ${txtColor}">${statusText}</div>
+                            </div>
+                            <span class="h-3 w-3 rounded-full ${dotClass}"></span>
+                        </div>
+                    `;
+                }
+
+                if(badges) badges.innerHTML = bHtml;
+                if(detail) detail.innerHTML = dHtml;
+                const kpiServ = document.getElementById('kpiServices');
+                if(kpiServ) kpiServ.textContent = `${activeCount}/${totalCount}`;
             }
-        }).catch(()=>{res.innerText='✗ Error de conexión con el servidor.';});
+        });
 }
 
-// ─── Init ─────────────────────────────────────────────────────────────────────
-setupOCRDrop('dropZoneOCR','fileInputOCR','ocrLoader','scheduleTableBody');
-setupOCRDrop('dropZoneOCR2','fileInputOCR2','ocrLoader2','ocrResultTable');
-
-// Load saved schedule
-fetch('api.php?action=last_data').then(r=>r.json()).then(d=>{
-    if(d.status==='ok'&&d.data&&d.data.clases) renderSchedule(d.data.clases);
-});
-
-refreshStatus();
-refreshLogs();
-setInterval(refreshStatus,10000);
-setInterval(refreshLogs,5000);
-
-// ── Theme Toggle ──────────────────────────────────────────────────────────────
-
-/**
- * Guarda el style inline original en data-orig-style y aplica nuevo valor.
- * Permite restaurar el original al volver a dark.
- */
-function patchInlineStyle(el, prop, lightVal, darkVal, isLight) {
-    if (!el) return;
-    if (isLight) {
-        if (!el.dataset.origStyle) el.dataset.origStyle = el.getAttribute('style') || '';
-        el.style[prop] = lightVal;
-    } else {
-        // Restaurar original si existe; de lo contrario aplicar darkVal
-        if (el.dataset.origStyle !== undefined) {
-            el.setAttribute('style', el.dataset.origStyle);
-            delete el.dataset.origStyle;
-        } else {
-            el.style[prop] = darkVal;
-        }
-    }
+function refreshLogs() {
+    fetch('api.php?action=logs')
+        .then(r => r.json())
+        .then(d => {
+            if(d.status === 'ok') {
+                const el = document.getElementById('logViewerFull');
+                if(el) { el.textContent = d.logs; el.scrollTop = el.scrollHeight; }
+            }
+        });
 }
 
 // ─── Mobile Sidebar Toggle ───────────────────────────────────────────────────
 function toggleMobileSidebar(open) {
     const sidebar = document.getElementById('sidebar');
     const backdrop = document.getElementById('sidebarBackdrop');
-    if (!sidebar || !backdrop) return;
-    
+    if(!sidebar || !backdrop) return;
     const isOpen = open !== undefined ? open : sidebar.classList.contains('-translate-x-full');
-    if (isOpen) {
+    if(isOpen) {
         sidebar.classList.remove('-translate-x-full');
         backdrop.classList.remove('hidden');
     } else {
@@ -1123,12 +1116,8 @@ function toggleMobileSidebar(open) {
     }
 }
 
-/**
- * Barre todos los elementos con un valor de color hardcodeado en style="" y los parchea.
- * Usa data-orig-style para poder restaurar al volver a dark.
- */
+// ─── Theme Toggle & Sweep ────────────────────────────────────────────────────
 function sweepInlineColors(isLight) {
-    // Mapeo: fragmento del inline style → valor claro
     const colorPatches = [
         { match: 'color:#fff',    light: '#0f172a' },
         { match: 'color:#ffffff', light: '#0f172a' },
@@ -1151,16 +1140,13 @@ function sweepInlineColors(isLight) {
         { match: 'background:#1a1a1a', light: '#f1f5f9' },
         { match: 'background:#141414', light: '#f8fafc' },
     ];
-
     if (isLight) {
-        // Color patches
         colorPatches.forEach(({match, light}) => {
             document.querySelectorAll(`[style*="${match}"]`).forEach(el => {
                 if (!el.dataset.origStyle) el.dataset.origStyle = el.getAttribute('style') || '';
                 el.style.color = light;
             });
         });
-        // Background patches
         bgPatches.forEach(({match, light}) => {
             document.querySelectorAll(`[style*="${match}"]`).forEach(el => {
                 if (!el.dataset.origStyle) el.dataset.origStyle = el.getAttribute('style') || '';
@@ -1168,7 +1154,6 @@ function sweepInlineColors(isLight) {
             });
         });
     } else {
-        // Restaurar todos los estilos guardados
         document.querySelectorAll('[data-orig-style]').forEach(el => {
             el.setAttribute('style', el.dataset.origStyle || '');
             delete el.dataset.origStyle;
@@ -1176,48 +1161,26 @@ function sweepInlineColors(isLight) {
     }
 }
 
-
 function applyTheme(t) {
     const isLight = t === 'light';
     document.documentElement.setAttribute('data-theme', t);
-
-    // ① Barrer elementos con colores hardcodeados en style=""
     sweepInlineColors(isLight);
 
-    // ② Forzar sidebar y header (tienen inline bg que CSS !important ya cubre,
-    //    pero el sweep es un doble seguro)
     const sidebar = document.getElementById('sidebar');
-    if (sidebar) {
-        sidebar.style.background = isLight ? '#ffffff' : '#0d0d0d';
-        sidebar.style.borderColor = isLight ? '#e0e0e0' : 'var(--border)';
-    }
+    if(sidebar) { sidebar.style.background = isLight ? '#ffffff' : '#0d0d0d'; sidebar.style.borderColor = isLight ? '#e2e8f0' : 'var(--border)'; }
     const header = document.querySelector('header');
-    if (header) {
-        header.style.background = isLight ? '#ffffff' : '#0a0a0a';
-        header.style.borderColor = isLight ? '#e0e0e0' : 'var(--border)';
-    }
+    if(header) { header.style.background = isLight ? '#ffffff' : '#0a0a0a'; header.style.borderColor = isLight ? '#e2e8f0' : 'var(--border)'; }
 
-    // ③ Log viewers (pre con color hardcodeado)
-    ['logViewer','logViewerFull'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-            el.style.background = isLight ? '#f0f0f0' : '';
-            el.style.color      = isLight ? '#222'    : '#888';
-            el.style.borderColor= isLight ? '#ddd'    : '';
-        }
-    });
-
-    // ④ Actualizar botón de toggle
-    const icon  = document.getElementById('themeIcon');
+    const icon = document.getElementById('themeIcon');
     const label = document.getElementById('themeLabel');
-    if (icon && label) {
-        icon.className   = isLight ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
-        label.textContent= isLight ? 'Oscuro' : 'Claro';
+    if(icon && label) {
+        icon.className = isLight ? 'fa-solid fa-moon' : 'fa-solid fa-sun';
+        label.textContent = isLight ? 'Oscuro' : 'Claro';
     }
 }
 
-function toggleTheme(){
-    const cur  = document.documentElement.getAttribute('data-theme') || 'dark';
+function toggleTheme() {
+    const cur = document.documentElement.getAttribute('data-theme') || 'dark';
     const next = cur === 'light' ? 'dark' : 'light';
     localStorage.setItem('chatosync-theme', next);
     applyTheme(next);
@@ -1225,11 +1188,11 @@ function toggleTheme(){
 
 // ─── Modal de Previsualización ────────────────────────────────────────────────
 const previewModal = document.getElementById('previewModal');
-const modalBody    = document.getElementById('modalBody');
-const modalTitle   = document.getElementById('modalTitle');
-const modalSize    = document.getElementById('modalSize');
-const modalIcon    = document.getElementById('modalIcon');
-const modalDownload= document.getElementById('modalDownloadBtn');
+const modalBody = document.getElementById('modalBody');
+const modalTitle = document.getElementById('modalTitle');
+const modalSize = document.getElementById('modalSize');
+const modalIcon = document.getElementById('modalIcon');
+const modalDownload = document.getElementById('modalDownloadBtn');
 
 const extIcons = {
     'pdf':'📄','png':'🖼️','jpg':'🖼️','jpeg':'🖼️','gif':'🖼️','webp':'🖼️','svg':'🖼️',
@@ -1242,33 +1205,33 @@ function openPreview(encodedFilename, ext, displayName, size) {
     const previewUrl = rawUrl + '&preview=1';
     
     modalTitle.textContent = displayName;
-    modalSize.textContent  = size;
-    modalIcon.textContent  = extIcons[ext] || '📄';
-    modalDownload.href     = rawUrl;
-    modalBody.innerHTML    = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-3xl" style="color:var(--red2);"></i><p class="text-xs mt-2 text-slate-400">Cargando previsualización...</p></div>';
+    modalSize.textContent = size;
+    modalIcon.textContent = extIcons[ext] || '📄';
+    modalDownload.href = rawUrl;
+    modalBody.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-spinner fa-spin text-3xl" style="color:var(--red2);"></i><p class="text-xs mt-2 text-slate-400">Cargando...</p></div>';
     
     previewModal.classList.remove('hidden');
     previewModal.classList.add('flex');
 
-    if (['jpg','jpeg','png','gif','webp','svg'].includes(ext)) {
+    if(['jpg','jpeg','png','gif','webp','svg'].includes(ext)) {
         modalBody.innerHTML = `<div class="flex items-center justify-center p-2"><img src="${previewUrl}" alt="${displayName}" class="max-h-[72vh] max-w-full rounded-xl object-contain shadow-2xl border border-neutral-700/50"></div>`;
-    } else if (ext === 'pdf') {
+    } else if(ext === 'pdf') {
         modalBody.innerHTML = `<iframe src="${previewUrl}" class="w-full h-[72vh] rounded-xl border border-neutral-700 bg-white" style="border:none;"></iframe>`;
-    } else if (['mp4','webm','mov'].includes(ext)) {
-        modalBody.innerHTML = `<div class="flex items-center justify-center w-full"><video controls autoplay class="max-h-[70vh] w-full max-w-3xl rounded-xl shadow-2xl bg-black"><source src="${previewUrl}">Tu navegador no soporta video HTML5.</video></div>`;
-    } else if (['mp3','wav','ogg'].includes(ext)) {
+    } else if(['mp4','webm','mov'].includes(ext)) {
+        modalBody.innerHTML = `<div class="flex items-center justify-center w-full"><video controls autoplay class="max-h-[70vh] w-full max-w-3xl rounded-xl shadow-2xl bg-black"><source src="${previewUrl}">Tu navegador no soporta video.</video></div>`;
+    } else if(['mp3','wav','ogg'].includes(ext)) {
         modalBody.innerHTML = `
             <div class="py-12 px-6 flex flex-col items-center justify-center gap-4 text-center">
                 <div class="h-20 w-20 rounded-full flex items-center justify-center text-4xl shadow-xl" style="background:var(--redbg);">🎵</div>
                 <h4 class="text-sm font-semibold text-white">${displayName}</h4>
-                <audio controls autoplay class="w-full max-w-md mt-2"><source src="${previewUrl}">Tu navegador no soporta audio HTML5.</audio>
+                <audio controls autoplay class="w-full max-w-md mt-2"><source src="${previewUrl}">Tu navegador no soporta audio.</audio>
             </div>`;
-    } else if (['txt','log','json','py','sh','md','csv'].includes(ext)) {
+    } else if(['txt','log','json','py','sh','md','csv'].includes(ext)) {
         fetch(previewUrl)
             .then(r => r.text())
             .then(text => {
                 const escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-                modalBody.innerHTML = `<pre class="w-full p-4 rounded-xl text-xs font-mono overflow-auto max-h-[70vh] whitespace-pre-wrap" style="background:var(--card2);color:var(--text);border:1px solid var(--border);">${escaped}</pre>`;
+                modalBody.innerHTML = `<pre class="w-full p-4 rounded-xl text-xs font-mono overflow-auto max-h-[70vh] whitespace-pre-wrap themed-sub">${escaped}</pre>`;
             })
             .catch(() => {
                 modalBody.innerHTML = `<div class="text-center text-xs p-8" style="color:var(--red2);">No se pudo cargar el archivo de texto.</div>`;
@@ -1278,7 +1241,7 @@ function openPreview(encodedFilename, ext, displayName, size) {
             <div class="py-12 px-6 flex flex-col items-center justify-center gap-4 text-center">
                 <div class="text-5xl">📑</div>
                 <h4 class="text-sm font-semibold text-white">${displayName}</h4>
-                <p class="text-xs text-slate-400 max-w-sm">Este tipo de archivo (${ext.toUpperCase()}) se puede descargar y abrir con la aplicación correspondiente en tu dispositivo.</p>
+                <p class="text-xs text-slate-400 max-w-sm">Este archivo (${ext.toUpperCase()}) se puede descargar y abrir en tu dispositivo.</p>
                 <a href="${rawUrl}" class="mt-2 px-4 py-2 rounded-xl text-xs font-bold text-white flex items-center gap-2" style="background:var(--red);"><i class="fa-solid fa-download"></i> Descargar Ahora</a>
             </div>`;
     }
@@ -1293,9 +1256,16 @@ function closePreview() {
 window.addEventListener('keydown', e => { if (e.key === 'Escape') closePreview(); });
 previewModal.addEventListener('click', e => { if (e.target === previewModal) closePreview(); });
 
-// Aplicar tema guardado al cargar (después de que el DOM está listo)
+// ─── Inicialización ──────────────────────────────────────────────────────────
+setupOCRUpload();
+renderVisualSchedule(currentSchedule);
+renderTableSchedule(currentSchedule);
+refreshStatus();
+refreshLogs();
+setInterval(refreshStatus, 10000);
+setInterval(refreshLogs, 5000);
+
 (function(){ applyTheme(localStorage.getItem('chatosync-theme') || 'dark'); })();
 </script>
 </body>
 </html>
-
