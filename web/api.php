@@ -97,27 +97,35 @@ if ($action === 'upload') {
     
     if (move_uploaded_file($tmpName, $tempPath)) {
         @chmod($tempPath, 0777);
-        // Ejecutar procesamiento con Python (capturando stderr)
-        $cmd = "/opt/chatosync-venv/bin/python /srv/samba/hub/procesar_horario.py --file " . escapeshellarg($tempPath) . " 2>&1";
-        $out = shell_exec($cmd);
-
-        
-        // AUTO-LIMPIEZA INMEDIATA: Borrar la foto del disco para no ocupar memoria ni almacenamiento
-        if (file_exists($tempPath)) {
-            @unlink($tempPath);
+        // Buscar el script procesar_horario.py más reciente
+        $scriptPath = "/srv/samba/hub/procesar_horario.py";
+        if (!file_exists($scriptPath) || filesize($scriptPath) < 500) {
+            $scriptPath = "/var/www/html/procesar_horario.py";
         }
         
-        // Extraer JSON limpio del output
-        $res = json_decode($out, true);
-        if (!$res && preg_match('/\[.*\]/s', $out, $matches)) {
-            $res = json_decode($matches[0], true);
+        $cmd = "/opt/chatosync-venv/bin/python " . escapeshellarg($scriptPath) . " --file " . escapeshellarg($tempPath) . " 2>&1";
+        $out = shell_exec($cmd);
+        
+        if (file_exists($tempPath)) { @unlink($tempPath); }
+        
+        $clases = [];
+        if ($out) {
+            $jsonStart = strpos($out, '[');
+            $jsonEnd = strrpos($out, ']');
+            if ($jsonStart !== false && $jsonEnd !== false && $jsonEnd > $jsonStart) {
+                $rawJson = substr($out, $jsonStart, $jsonEnd - $jsonStart + 1);
+                $clases = json_decode($rawJson, true) ?: [];
+            }
         }
         
         echo json_encode([
             'status' => 'ok',
-            'message' => 'Horario procesado exitosamente (imagen auto-eliminada del servidor).',
-            'clases' => is_array($res) ? $res : [],
+            'message' => 'Horario procesado exitosamente.',
+            'count' => count($clases),
+            'clases' => $clases,
+            'debug' => substr($out, 0, 500)
         ], JSON_UNESCAPED_UNICODE);
+        exit;
     } else {
         echo json_encode(['status' => 'error', 'message' => 'No se pudo procesar la imagen temporal.']);
     }

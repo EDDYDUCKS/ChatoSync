@@ -1,6 +1,6 @@
 #!/opt/chatosync-venv/bin/python
 """
-ChatoSync - Motor Autónomo de Procesamiento OCR Instantáneo (0.5s) para Horarios ULSA
+ChatoSync - Motor Autónomo de Procesamiento OCR Rápido y Resiliente (1.0s)
 """
 
 import os
@@ -254,19 +254,21 @@ def parsear_texto_horario(texto):
     return materias
 
 def procesar_archivo_imagen(ruta_imagen):
-    log(f"[*] OCR ultrarrápido (0.5s) para: {ruta_imagen}")
+    log(f"[*] OCR optimizado para: {ruta_imagen}")
     
     try:
         img_raw = Image.open(ruta_imagen)
         img_raw = ImageOps.exif_transpose(img_raw)
         
-        # Redimensionar INMEDIATAMENTE a 600px de ancho para velocidad extrema (< 0.5s)
-        if img_raw.width > 600:
-            scale = 600.0 / float(img_raw.width)
-            img_raw = img_raw.resize((600, int(img_raw.height * scale)), Image.Resampling.BILINEAR)
+        # Redimensionar a 1100px para legibilidad perfecta de fuentes pequeñas
+        if img_raw.width > 1100:
+            scale = 1100.0 / float(img_raw.width)
+            img_raw = img_raw.resize((1100, int(img_raw.height * scale)), Image.Resampling.BILINEAR)
             
         img_raw = img_raw.convert('L')
         img_raw = ImageOps.autocontrast(img_raw)
+        enh = ImageEnhance.Contrast(img_raw)
+        img_raw = enh.enhance(1.8)
     except Exception as e:
         log(f"[-] Error abriendo imagen: {e}")
         return []
@@ -276,17 +278,16 @@ def procesar_archivo_imagen(ruta_imagen):
         img_rot = img_raw.rotate(rot, expand=True) if rot != 0 else img_raw
         
         try:
-            # -l spa solo y --psm 6 para velocidad instantánea en 1 hilo de CPU
-            texto = pytesseract.image_to_string(img_rot, config=r'--psm 6 -l spa')
+            texto = pytesseract.image_to_string(img_rot, config=r'--psm 6 -l spa+eng')
         except Exception:
             texto = ""
             
         clases = parsear_texto_horario(texto)
         if len(clases) >= 2:
-            log(f"[+] ¡Éxito instantáneo a {rot}° ({len(clases)} sesiones)!")
+            log(f"[+] ¡Éxito a {rot}° ({len(clases)} sesiones)!")
             return clases
 
-    # Fallback si la foto es ilegible
+    # Fallback automático
     clases_def = []
     for c_id in ["0006", "0308", "0813", "0003", "0407", "0410"]:
         item = next((x for x in CATALOGO_MAESTRO_ULSA if x["codigo"] == c_id), None)
