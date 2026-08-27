@@ -59,13 +59,39 @@ def limpiar_aula(raw):
         a = 'B' + a[1:]
     return a or "ULSA"
 
+# Lookup inverso: nombre parcial → código
+NOMBRE_A_COD = {
+    "análisis numérico": "0006",
+    "control lógico": "0308",
+    "formulación": "0813",
+    "matemática iii": "0003",
+    "organización de archivos": "0407",
+    "tecnologías de la información": "0410",
+    "estructuras de datos": "0406",
+    "nanotecnología": "0306",
+    "sistemas de control": "0302",
+    "robótica": "0303",
+    "inteligencia artificial": "0305",
+    "taller de conectividad": "0603",
+    "administración financiera": "0808",
+}
+
+def cod_por_nombre(linea):
+    """Detecta código por nombre parcial de asignatura en la línea."""
+    ll = linea.lower()
+    for nombre, cod in NOMBRE_A_COD.items():
+        if nombre in ll:
+            return cod
+    return None
+
 def extraer_sesiones(texto):
-    """Extrae tuplas (dia, hora_ini, hora_fin, aula) de un texto."""
+    """Extrae sesiones. Acepta formato con o sin espacio: Ma10:00am o Ma 10:00 am."""
     patron = re.compile(
-        r'(Lu|Ma|Mi|Ju|Vi|Sa)[a-z]*\s+'
-        r'(\d{1,2}[:.]\d{2}\s*[ap]m)\s*[-–]\s*'
-        r'(\d{1,2}[:.]\d{2}\s*[ap]m)\s*'
-        r'(?:\[|\()?\s*([A-Za-z]\d{2,4})',
+        r'(Lu|Ma|Mi|Ju|Vi|Sa)[a-z]*\s*'          # día (espacio opcional)
+        r'(\d{1,2}[:.]\d{2}\s*[ap]\.?m\.?)\s*'   # hora inicio
+        r'[-–]\s*'
+        r'(\d{1,2}[:.]\d{2}\s*[ap]\.?m\.?)\s*'   # hora fin
+        r'(?:\[|\()?\s*([A-Za-z]\d{2,4})',        # aula
         re.IGNORECASE
     )
     result = []
@@ -78,7 +104,9 @@ def extraer_sesiones(texto):
 def parsear(texto):
     """
     Lee el texto OCR línea por línea.
-    Mantiene el último código de materia activo hasta encontrar uno nuevo.
+    1. Detecta código numérico explícito (más confiable).
+    2. Si no hay código, detecta por nombre de asignatura.
+    3. Si la sesión está en la MISMA línea que el nombre, usa ese código inline.
     """
     clases = []
     codigo_actual  = "0000"
@@ -90,6 +118,7 @@ def parsear(texto):
         if not linea:
             continue
 
+        # 1. Código numérico explícito
         cod = limpiar_codigo(linea)
         if cod:
             codigo_actual = cod
@@ -99,24 +128,40 @@ def parsear(texto):
                 materia_actual = f"Asignatura {cod}"
                 docente_actual = "Docente Asignado"
 
+        # 2. Fallback: nombre de asignatura sin código (OCR perdió el dígito)
+        else:
+            cod_n = cod_por_nombre(linea)
+            if cod_n:
+                codigo_actual = cod_n
+                if cod_n in CATALOGO:
+                    materia_actual, docente_actual = CATALOGO[cod_n]
+
+        # 3. Docente explícito
         m_doc = re.search(r'\b(Ing\.|Lic\.|MSc\.|Dr\.|Dra\.)\s+[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+', linea)
         if m_doc:
             docente_actual = m_doc.group(0).strip()
 
-        for dia, hi, hf, aula in extraer_sesiones(linea):
+        # 4. Extraer sesiones — si la línea también tiene nombre, usar ese código
+        cod_inline = cod_por_nombre(linea)
+        sesiones = extraer_sesiones(linea)
+        for dia, hi, hf, aula in sesiones:
+            cod_usar = cod_inline if cod_inline else codigo_actual
+            mat_usar = CATALOGO[cod_usar][0] if cod_usar in CATALOGO else materia_actual
+            doc_usar = CATALOGO[cod_usar][1] if cod_usar in CATALOGO else docente_actual
             clases.append({
-                "codigo":       codigo_actual,
-                "materia":      materia_actual,
+                "codigo":       cod_usar,
+                "materia":      mat_usar,
                 "dia":          dia,
                 "dia_completo": DIAS_NOMBRE.get(dia, dia),
                 "hora_inicio":  hi,
                 "hora_fin":     hf,
                 "aula":         aula,
-                "docente":      docente_actual
+                "docente":      doc_usar
             })
-            log(f"   ✓ [{codigo_actual}] {materia_actual} | {dia} {hi}-{hf} | {aula}")
+            log(f"   ✓ [{cod_usar}] {mat_usar} | {dia} {hi}-{hf} | {aula}")
 
     return clases
+
 
 # ── Preprocesamiento ──────────────────────────────────────────────────────────
 def preparar(img, width=1400, contraste=False):
