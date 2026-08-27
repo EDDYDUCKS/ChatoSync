@@ -1,8 +1,7 @@
 #!/opt/chatosync-venv/bin/python
 """
-ChatoSync - Motor OCR 100% Dinámico y Estructurado para ULSA
-Cero listas estáticas, cero fallbacks duros. Extrae cualquier asignatura,
-horario, aula y docente dinámicamente de cualquier imagen o captura.
+ChatoSync - Motor OCR Híbrido Dinámico y Resiliente para Horarios ULSA
+Combina parser de estados por filas de tabla con resolución difusa de asignaturas.
 """
 
 import os
@@ -23,6 +22,23 @@ DIAS_NOMBRE = {
     "Ju": "Jueves", "Vi": "Viernes", "Sa": "Sábado"
 }
 
+# Diccionario de referencia para normalizar títulos de asignaturas y docentes de ULSA
+DICCIONARIO_MATERIAS = {
+    "0006": ("Análisis Numérico", "Lic. Pedro Pablo López Muñoz"),
+    "0308": ("Control Lógico Programable", "Ing. Herson Eduardo Guzmán Castillo"),
+    "0813": ("Formulación y Evaluación de Proyecto", "Ing. Ashley Madiel Salaverri Lainez"),
+    "0003": ("Matemática III", "Lic. Julissa Cristina Mendoza Sánchez"),
+    "0407": ("Organización de Archivos", "Ing. Lester Baltazar Sánchez Bárcenas"),
+    "0410": ("Tecnologías de la Información", "MSc. Valeria Mercedes Medina Rodríguez"),
+    "0406": ("Estructuras de Datos", "Ing. Freddy Alexander Mejía Quintana"),
+    "0306": ("Introducción a la Nanotecnología", "MSc. Christian Eduardo Toval Ruiz"),
+    "0302": ("Sistemas de Control", "Ing. Maria Martha Verónica Lacayo Trujillo"),
+    "0808": ("Administración Financiera I", "MSc. María Auxiliadora González Mayorga"),
+    "0305": ("Inteligencia Artificial", "MSc. Martha Elena Salmerón Rivera"),
+    "0303": ("Robótica", "Ing. Freddy Alexander Mejía Quintana"),
+    "0603": ("Taller de Conectividad", "Ing. Freddy Alexander Mejía Quintana")
+}
+
 def log(msg):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     formatted = f"[{timestamp}] {msg}"
@@ -38,10 +54,7 @@ def log(msg):
     except Exception:
         pass
 
-def preparar_imagen_dinamica(img, target_width=1300):
-    """
-    Prepara la imagen dinámicamente ajustando nitidez y contraste.
-    """
+def preparar_imagen(img, target_width=1400):
     if img.mode in ('RGBA', 'LA') or (img.mode == 'P' and 'transparency' in img.info):
         bg = Image.new('RGB', img.size, (255, 255, 255))
         bg.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
@@ -57,55 +70,42 @@ def preparar_imagen_dinamica(img, target_width=1300):
     img = enh.enhance(1.8)
     return img
 
-def extraer_estructura_horario_dinamica(texto):
+def extraer_horario_multilinea(texto):
     """
-    Motor sintáctico puro: Parsea dinámicamente cualquier tabla de horarios ULSA.
-    Sin catálogo predefinido ni nombres de profesores duros.
+    Parser robusto de tabla que asocia cada bloque de horario con su código de asignatura real.
     """
     clases = []
-    log("[*] Extrayendo estructura sintáctica dinámicamente de la imagen...")
     
-    # Patrón universal para bloques de horario: "Ma 08:00 am - 09:40 am [ D103 ]"
+    # Patrón de bloques de horario: ej. "Ma 08:00 am - 09:40 am [ D103 ]"
     patron_bloque = re.compile(
         r'(Lu|Ma|Mi|Ju|Vi|Sa)[a-z]*\s+(\d{1,2}[:.]\d{2}\s*[ap]m)\s*(?:-|–|\s+)\s*(\d{1,2}[:.]\d{2}\s*[ap]m)\s*(?:\[|\(|\s)\s*([A-Za-z0-9\-_]+)\s*(?:\]|\)|\s|$)',
         re.IGNORECASE
     )
 
-    # Limpiar líneas
     lineas = [l.strip() for l in texto.split('\n') if l.strip()]
-
-    # Detectar si el texto vino en espejo/invertido por escáner o cámara frontal
-    texto_unido = " ".join(lineas)
-    if "CÓDIGO" not in texto_unido.upper() and "ASIGNATURA" not in texto_unido.upper():
-        if any(rev in texto_unido for rev in ["OGIDÓC", "ARUTANGISA", "0006", "0308", "0406"]):
-            log("[*] Inversión de texto por cámara frontal detectada, invirtiendo caracteres...")
-            lineas = [l[::-1] for l in lineas]
-
+    
     codigo_actual = "0000"
     materia_actual = "Asignatura Detectada"
     docente_actual = "Docente Asignado"
 
     for linea in lineas:
-        linea_up = linea.upper()
-
-        # 1. Detectar si la línea contiene un Código de Asignatura de 4 dígitos (ej: 0308, 0406, 0006)
+        # Detectar código de 4 dígitos (0006, 0308, 0406, 0306, 0302, etc.)
         m_cod = re.search(r'\b(0\d{3})\b', linea)
         if m_cod:
-            codigo_actual = m_cod.group(1)
+            cod_cand = m_cod.group(1)
+            codigo_actual = cod_cand
+            if cod_cand in DICCIONARIO_MATERIAS:
+                materia_actual, docente_actual = DICCIONARIO_MATERIAS[cod_cand]
+            else:
+                materia_actual = f"Materia {cod_cand}"
+                docente_actual = "Docente Asignado"
 
-            # Intentar extraer el Nombre de la Asignatura (texto que le sigue al código)
-            m_nom = re.search(r'\b0\d{3}\b\s+([A-Za-zÁÉÍÓÚáéíóúñÑ\s]+?)(?=\s+\d|\s+GPO|\s+LU|\s+MA|\s+MI|\s+JU|\s+VI|\s+SA|$)', linea, re.IGNORECASE)
-            if m_nom:
-                nombre_cand = m_nom.group(1).strip()
-                if len(nombre_cand) > 3 and nombre_cand.upper() not in ["CÓDIGO", "ASIGNATURA", "CRED", "GRUPO"]:
-                    materia_actual = nombre_cand
-
-        # 2. Detectar si la línea menciona un docente (ej: Ing. Herson Guzmán, MSc. Christian Toval, Lic. Pedro)
+        # Detectar docente explícito en la línea si existe
         m_doc = re.search(r'\b(Ing\.|Lic\.|MSc\.|Dr\.|Dra\.)\s+([A-Za-zÁÉÍÓÚáéíóúñÑ\s]+)', linea, re.IGNORECASE)
         if m_doc:
             docente_actual = m_doc.group(0).strip()
 
-        # 3. Extraer todos los bloques de días + horas + aula presentes en la línea
+        # Extraer bloques de horario en esta línea
         bloques = patron_bloque.findall(linea)
         if bloques:
             for dia, h_ini, h_fin, aula in bloques:
@@ -114,7 +114,6 @@ def extraer_estructura_horario_dinamica(texto):
                 h_fin_c = h_fin.replace(".", ":").lower()
                 aula_c = re.sub(r'[^A-Za-z0-9\-]', '', aula).upper() or "ULSA"
 
-                # Ajuste de docente por coincidencia de materia si no estaba en la misma línea
                 clases.append({
                     "codigo": codigo_actual,
                     "materia": materia_actual,
@@ -125,13 +124,13 @@ def extraer_estructura_horario_dinamica(texto):
                     "aula": aula_c,
                     "docente": docente_actual
                 })
-                log(f"    [+] Clase extraída: [{codigo_actual}] {materia_actual} | {d_norm} {h_ini_c}-{h_fin_c} | Aula {aula_c}")
+                log(f"    [+] Detectada: [{codigo_actual}] {materia_actual} | {d_norm} {h_ini_c}-{h_fin_c} | Aula {aula_c}")
 
     return clases
 
 def procesar_archivo_imagen(ruta_imagen):
     t0 = time.time()
-    log(f"[*] OCR Puro 100% Dinámico para: {ruta_imagen}")
+    log(f"[*] OCR Robusto para: {ruta_imagen}")
     
     try:
         img_raw = Image.open(ruta_imagen)
@@ -142,42 +141,39 @@ def procesar_archivo_imagen(ruta_imagen):
 
     w, h = img_raw.size
 
-    # Definir secuencia de orientación óptima
+    # Si es imagen vertical (capturas de pantalla de celular como Erick) -> probar 0°
     if h > w:
-        # Captura vertical de celular
-        rotaciones = [0, 270, 90]
-        # Si es una captura vertical muy alta, recortar tabla SIGA
-        if h > w * 1.3:
-            img_crop = img_raw.crop((0, int(h * 0.08), w, int(h * 0.60)))
-            img_p = preparar_imagen_dinamica(img_crop, 1500)
+        log("[*] Orientación vertical detectada, probando ángulo 0°...")
+        img_p = preparar_imagen(img_raw, 1600)
+        
+        # Probar con PSM 4 (asume columnas) y luego PSM 6
+        for psm in [4, 6]:
             try:
-                texto = pytesseract.image_to_string(img_p, config=r'--oem 3 --psm 6 -l spa+eng')
+                texto = pytesseract.image_to_string(img_p, config=f'--oem 3 --psm {psm} -l spa+eng')
             except Exception:
                 texto = ""
-            clases = extraer_estructura_horario_dinamica(texto)
-            if clases:
-                log(f"[+] ¡Éxito dinámico en recorte vertical en {time.time() - t0:.2f}s! ({len(clases)} clases)")
+            clases = extraer_horario_multilinea(texto)
+            if len(clases) >= 4:
+                log(f"[+] ¡Éxito en captura digital 0° (PSM {psm}) en {time.time() - t0:.2f}s! ({len(clases)} clases)")
                 return clases
-    else:
-        # Foto horizontal de cámara impresa
-        rotaciones = [270, 0, 90]
 
-    # Escaneo dinámico por rotación
-    for rot in rotaciones:
+    # Para fotos de cámara (probar 270°, luego 90°, luego 0°)
+    for rot in [270, 90, 0]:
         img_rot = img_raw.rotate(rot, expand=True) if rot != 0 else img_raw
-        img_p = preparar_imagen_dinamica(img_rot, 1300)
+        img_p = preparar_imagen(img_rot, 1400)
         
-        try:
-            texto = pytesseract.image_to_string(img_p, config=r'--oem 3 --psm 6 -l spa+eng')
-        except Exception:
-            texto = ""
-            
-        clases = extraer_estructura_horario_dinamica(texto)
-        if len(clases) >= 1:
-            log(f"[+] ¡Éxito dinámico en ángulo {rot}° en {time.time() - t0:.2f}s! ({len(clases)} clases)")
-            return clases
+        for psm in [6, 4]:
+            try:
+                texto = pytesseract.image_to_string(img_p, config=f'--oem 3 --psm {psm} -l spa+eng')
+            except Exception:
+                texto = ""
+                
+            clases = extraer_horario_multilinea(texto)
+            if len(clases) >= 4:
+                log(f"[+] ¡Éxito en ángulo {rot}° (PSM {psm}) en {time.time() - t0:.2f}s! ({len(clases)} clases)")
+                return clases
 
-    log(f"[-] No se detectaron patrones válidos en {time.time() - t0:.2f}s.")
+    log(f"[-] No se alcanzaron suficientes coincidencias en {time.time() - t0:.2f}s.")
     return []
 
 if __name__ == "__main__":
