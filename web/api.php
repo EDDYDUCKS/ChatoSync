@@ -85,6 +85,9 @@ if ($action === 'logs') {
 
 // ─── Subida y Procesamiento OCR ───────────────────────────────────────────────
 if ($action === 'upload') {
+    set_time_limit(0);   // Sin timeout — Tesseract puede tardar varios minutos
+    ini_set('max_execution_time', 0);
+
     if (!isset($_FILES['horario']) || $_FILES['horario']['error'] !== UPLOAD_ERR_OK) {
         echo json_encode(['status' => 'error', 'message' => 'Error al subir archivo desde el navegador.']);
         exit;
