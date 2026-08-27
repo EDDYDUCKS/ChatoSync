@@ -166,12 +166,19 @@ if ($action === 'test_sample') {
     $cmd = "/opt/chatosync-venv/bin/python /srv/samba/hub/procesar_horario.py --file " . escapeshellarg($tempDest) . " 2>&1";
     $out = shell_exec($cmd);
 
-    
     if (file_exists($tempDest)) { @unlink($tempDest); }
-    
-    $res = json_decode($out, true);
-    if (!$res && preg_match('/\[.*\]/s', $out, $matches)) {
-        $res = json_decode($matches[0], true);
+
+    $res = [];
+    if (preg_match('/<<<JSON>>>(.*?)<<<END>>>/s', $out, $m)) {
+        $res = json_decode(trim($m[1]), true) ?: [];
+    }
+    if (empty($res)) {
+        $pos = strrpos($out, '[');
+        if ($pos !== false) {
+            $candidate = substr($out, $pos);
+            $decoded = json_decode($candidate, true);
+            if (is_array($decoded)) $res = $decoded;
+        }
     }
     
     echo json_encode([
