@@ -740,13 +740,18 @@ try {
 } catch(e){}
 
 
-// ─── QR Codes ────────────────────────────────────────────────────────────────
-if(document.getElementById('qrMini')){
-    new QRCode(document.getElementById('qrMini'),{text:transferURL,width:80,height:80,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
-}
-if(document.getElementById('qrTransfer')){
-    new QRCode(document.getElementById('qrTransfer'),{text:transferURL,width:160,height:160,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
-}
+// ─── QR Codes (Protegido para Red Local Offline) ─────────────────────────────
+try {
+    if(typeof QRCode !== 'undefined') {
+        if(document.getElementById('qrMini')){
+            new QRCode(document.getElementById('qrMini'),{text:transferURL,width:80,height:80,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
+        }
+        if(document.getElementById('qrTransfer')){
+            new QRCode(document.getElementById('qrTransfer'),{text:transferURL,width:160,height:160,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});
+        }
+    }
+} catch(e) { console.warn('QRCode offline:', e); }
+
 
 // ─── Navegación de Paneles ───────────────────────────────────────────────────
 function showPanel(panelId) {
