@@ -273,20 +273,80 @@ function handleSel(inp){
     document.getElementById('ubtn').classList.remove('hidden');
 }
 
+function showUploadMsg(ok, msg) {
+    // Crear o reusar el div de mensaje
+    let div = document.getElementById('uploadMsg');
+    if (!div) {
+        div = document.createElement('div');
+        div.id = 'uploadMsg';
+        div.style.cssText = 'margin-top:12px;padding:12px 16px;border-radius:10px;font-size:13px;font-weight:600;';
+        document.getElementById('uploadForm').appendChild(div);
+    }
+    if (ok) {
+        div.style.background = 'rgba(34,197,94,.1)';
+        div.style.border     = '1px solid rgba(34,197,94,.3)';
+        div.style.color      = '#22c55e';
+    } else {
+        div.style.background = 'var(--redbg)';
+        div.style.border     = '1px solid rgba(220,38,38,.35)';
+        div.style.color      = '#ef4444';
+    }
+    div.textContent = msg;
+}
+
 function doUpload(){
     if(!fi.files.length) return;
-    const btn=document.getElementById('ubtn');
-    btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin mr-2"></i>Enviando…';
-    const fd=new FormData();fd.append('archivo',fi.files[0]);
-    const xhr=new XMLHttpRequest();
+    const btn = document.getElementById('ubtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-2"></i>Enviando…';
+
+    const fd = new FormData();
+    fd.append('archivo', fi.files[0]);
+
+    const xhr = new XMLHttpRequest();
     document.getElementById('pg').classList.remove('hidden');
-    xhr.upload.onprogress=e=>{
-        if(e.lengthComputable){const p=Math.round(e.loaded/e.total*100);document.getElementById('pb').style.width=p+'%';document.getElementById('pt').textContent=p+'%';}
+
+    xhr.upload.onprogress = e => {
+        if (e.lengthComputable) {
+            const p = Math.round(e.loaded / e.total * 100);
+            document.getElementById('pb').style.width = p + '%';
+            document.getElementById('pt').textContent = p + '%';
+        }
     };
-    xhr.onload=()=>window.location.reload();
-    xhr.open('POST','transfer.php',true);
+
+    xhr.onload = () => {
+        // Revisar si PHP devolvió un error HTTP
+        if (xhr.status >= 400) {
+            showUploadMsg(false, '✗ Error del servidor HTTP ' + xhr.status + '. Verifica permisos en /srv/samba/hub/');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-rocket mr-2"></i>Reintentar';
+            return;
+        }
+
+        // Si la respuesta contiene texto de error PHP
+        const resp = xhr.responseText || '';
+        if (resp.includes('move_uploaded_file') || resp.includes('Permission denied') || resp.includes('Error')) {
+            showUploadMsg(false, '✗ Error al guardar: ' + resp.substring(0, 120));
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-rocket mr-2"></i>Reintentar';
+            return;
+        }
+
+        // Éxito — recargar para mostrar el archivo en la lista
+        showUploadMsg(true, '✓ Archivo subido correctamente. Actualizando lista…');
+        setTimeout(() => window.location.reload(), 800);
+    };
+
+    xhr.onerror = () => {
+        showUploadMsg(false, '✗ Error de conexión con el servidor. ¿Está activo Apache?');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-rocket mr-2"></i>Reintentar';
+    };
+
+    xhr.open('POST', 'transfer.php', true);
     xhr.send(fd);
 }
+
 
 // ── Theme Toggle ──────────────────────────────────────────────────────────────
 function sweepInlineColors(isLight) {
