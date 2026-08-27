@@ -183,38 +183,68 @@ def parsear_texto_multiestado(texto):
 
     return clases
 
+def detectar_calidad_imagen(img):
+    """Detecta si la imagen ya viene nítida (alta varianza = alto contraste = imagen digital limpia)."""
+    import statistics
+    gray = img.convert('L')
+    pixels = list(gray.getdata())
+    try:
+        return statistics.variance(pixels) > 2000
+    except Exception:
+        return False
+
 def procesar_archivo_imagen(ruta_imagen):
     t0 = time.time()
-    log(f"[*] MOTOR MAESTRO OCR INICIADO: {ruta_imagen}")
-    
+    log(f"[*] MOTOR OCR INTELIGENTE: {ruta_imagen}")
+
     try:
         img_raw = Image.open(ruta_imagen)
         img_raw = ImageOps.exif_transpose(img_raw)
     except Exception as e:
-        log(f"[-] Error al abrir archivo de imagen: {e}")
+        log(f"[-] Error al abrir archivo: {e}")
         return []
 
     w, h = img_raw.size
+    es_vertical = h > w
+    es_nitida = detectar_calidad_imagen(img_raw)
+    log(f"[*] {w}x{h} | {'Vertical' if es_vertical else 'Horizontal'} | {'NÍTIDA → Fast Path' if es_nitida else 'Compleja → Preprocesamiento'}")
 
-    # Definir secuencia óptima según tipo de imagen
-    if h > w:
-        log("[*] Formato vertical detectado (Captura Móvil). Secuencia: 0°, 270°")
-        rotaciones = [0, 270]
-    else:
-        log("[*] Formato horizontal detectado (Foto Impresa). Secuencia: 270°, 90°, 0°")
-        rotaciones = [270, 90, 0]
+    # ── FAST PATH: imagen digital limpia (PDF impreso, captura SIGA) ───────
+    # NO se aplican filtros. Solo reescalar si es muy pequeña y correr OCR una vez.
+    if es_nitida:
+        rotaciones_rapidas = [0] if es_vertical else [0, 270]
+        for rot in rotaciones_rapidas:
+            img_rot = img_raw.rotate(rot, expand=True) if rot != 0 else img_raw
+            if img_rot.width < 800:
+                scale = 1400 / img_rot.width
+                img_rot = img_rot.resize((1400, int(img_rot.height * scale)), Image.Resampling.LANCZOS)
+            img_gray = img_rot.convert('L')
 
+            clases = extraer_por_cajas_geometricas(img_gray)
+            if len(clases) >= 4:
+                log(f"[+] FAST PATH BBox a {rot}° → {time.time()-t0:.2f}s ({len(clases)} clases)")
+                return clases
+            try:
+                txt = pytesseract.image_to_string(img_gray, config='--oem 3 --psm 6 -l spa+eng')
+            except Exception:
+                txt = ""
+            clases = parsear_texto_multiestado(txt)
+            if len(clases) >= 4:
+                log(f"[+] FAST PATH String a {rot}° → {time.time()-t0:.2f}s ({len(clases)} clases)")
+                return clases
+
+    # ── SLOW PATH: foto de cámara, baja luz, inclinación ──────────────────
+    log("[*] Slow path: preprocesamiento completo + múltiples ángulos...")
+    rotaciones = [0, 270] if es_vertical else [270, 90, 0]
     for rot in rotaciones:
         img_rot = img_raw.rotate(rot, expand=True) if rot != 0 else img_raw
         img_proc = mejorar_imagen_optima(img_rot, 1500)
-        
-        # 1. Intentar por Extracción Geométrica
+
         clases = extraer_por_cajas_geometricas(img_proc)
         if len(clases) >= 4:
-            log(f"[+] ¡Éxito por Bounding Boxes a {rot}° en {time.time() - t0:.2f}s! ({len(clases)} clases)")
+            log(f"[+] Slow BBox a {rot}° → {time.time()-t0:.2f}s ({len(clases)} clases)")
             return clases
 
-        # 2. Intentar por PSM 4 y PSM 6
         for psm in [4, 6]:
             try:
                 txt = pytesseract.image_to_string(img_proc, config=f'--oem 3 --psm {psm} -l spa+eng')
@@ -222,7 +252,7 @@ def procesar_archivo_imagen(ruta_imagen):
                 txt = ""
             clases = parsear_texto_multiestado(txt)
             if len(clases) >= 4:
-                log(f"[+] ¡Éxito por String OCR (PSM {psm}) a {rot}° en {time.time() - t0:.2f}s! ({len(clases)} clases)")
+                log(f"[+] Slow PSM {psm} a {rot}° → {time.time()-t0:.2f}s ({len(clases)} clases)")
                 return clases
 
     # Fallback de seguridad por reconocimiento de firma si la foto de cámara física fue muy oscura
